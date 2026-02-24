@@ -21,20 +21,35 @@
 ### Required Block Order
 
 ```
-system → config → variables → language → connections → topic → start_agent
+config → variables → system → connection → knowledge → language → start_agent → topic
 ```
 
 | Block | Required | Purpose |
 |-------|----------|---------|
-| `system:` | ✅ Yes | Global messages and instructions |
 | `config:` | ✅ Yes | Agent metadata and identification |
 | `variables:` | Optional | State management (mutable/linked) |
+| `system:` | ✅ Yes | Global messages and instructions |
+| `connection:` | Optional | Escalation routing (`connection messaging:` — singular, NOT `connections:`) |
+| `knowledge:` | Optional | Knowledge base configuration |
 | `language:` | Optional | Supported languages |
-| `connections:` | Optional | External system integrations |
-| `topic:` | ✅ Yes | Conversation topics (one or more) |
 | `start_agent:` | ✅ Yes | Entry point (exactly one) |
+| `topic:` | ✅ Yes | Conversation topics (one or more) |
 
 > ✅ **Validated Finding**: Documentation implies strict ordering, but both config-first and system-first orderings compile. Pick one convention and be consistent.
+
+### Block Internal Ordering
+
+Within `start_agent` and `topic` blocks, sub-blocks follow this order:
+
+```
+description → system → actions → reasoning → after_reasoning
+```
+
+Within a `reasoning` block:
+
+```
+instructions → actions
+```
 
 ---
 
@@ -111,6 +126,15 @@ variables:
 | `id` | Unique identifiers | `record_id: mutable id` |
 | `list[T]` | Arrays of type T | `items: mutable list[string] = []` |
 
+**Action-Only Types** (valid for action I/O, NOT for mutable/linked variables):
+
+| Type | Description |
+|------|-------------|
+| `datetime` | Date and time (action I/O only) |
+| `time` | Time of day (action I/O only) |
+| `integer` | Whole numbers (action I/O only) |
+| `long` | Large whole numbers (action I/O only) |
+
 #### Variable Modifiers
 
 | Modifier | Behavior | Use Case |
@@ -132,7 +156,22 @@ language:
 
 ---
 
-### 5. connections: Block (Optional)
+### 5. knowledge: Block (Optional)
+
+```yaml
+knowledge:
+  knowledge_base: "My_Knowledge_Base"
+```
+
+| Field | Purpose |
+|-------|---------|
+| `knowledge_base` | Name of the knowledge base to attach to the agent |
+
+> 💡 Knowledge bases are configured in the Salesforce org and referenced by name. The knowledge block enables RAG (Retrieval Augmented Generation) capabilities for the agent.
+
+---
+
+### 6. connections: Block (Optional)
 
 ```yaml
 connections:
@@ -153,7 +192,7 @@ connections:
 
 ---
 
-### 6. topic: Block (Required - one or more)
+### 7. topic: Block (Required - one or more)
 
 ```yaml
 topic main:
@@ -174,7 +213,7 @@ topic main:
 
 ---
 
-### 7. start_agent: Block (Required - exactly one)
+### 8. start_agent: Block (Required - exactly one)
 
 ```yaml
 start_agent entry:
@@ -235,6 +274,20 @@ reasoning:
 | Set variable | `set @var = @outputs.y` | Capture action output |
 | Template injection | Curly-bang syntax: {!@variables.x} | Insert variable value into text |
 | Deterministic transition | `transition to @topic.x` | Change topic without LLM |
+
+> ⚠️ **`else if` is NOT supported**: Agent Script does not have an `else if` keyword. Nested `if` inside `else:` is also invalid. Use compound conditions (`if A and B:`) or flatten to sequential `if` statements.
+
+### Multiline String Continuation
+
+Long literal text can span multiple lines using indented continuation:
+
+```yaml
+instructions: |
+  | This is a long instruction that
+    continues on the next line without a pipe.
+```
+
+The continued line is indented further than the `|` line and does NOT start with a new `|`.
 
 ---
 
@@ -417,6 +470,7 @@ topic main:
 | `@outputs.x` | Reference action output | `@outputs.status` |
 | `@session.x` | Reference session data | `@session.sessionID` |
 | `@context.x` | Reference context data | `@context.userProfile` |
+| `@inputs.x` | Reference procedure input | `@inputs.account_number` ⚠️ Procedure context only — see Common Pitfalls |
 
 ---
 
@@ -659,3 +713,49 @@ actions:
 | Mutable + linked | Conflicting modifiers | Choose one modifier |
 | Missing `source:` for linked | Variable empty | Add `source: @session.X` |
 | Missing `default_agent_user` | Internal error on deploy | Add valid Einstein Agent User |
+| `@inputs` in `set` directive | Unknown deploy error | Use `@utils.setVariables` to capture inputs separately, then reference via `@variables` |
+| Bare action name (no prefix) | Action not found / ignored | Always use `@actions.action_name` in `run`, templates, and instruction text |
+| `run @actions.X` for utility | Action not found | `run @actions.X` resolves against topic-level `actions:` with `target:` — use `@utils.setVariables` directly, not via `run` |
+
+### `@inputs` in `set` — Deploy-Breaking Anti-Pattern
+
+```yaml
+# ❌ WRONG — @inputs in set causes unknown error at deploy time
+verify: @actions.verify_customer
+   with account_number=...
+   set @variables.account_number = @inputs.account_number
+
+# ✅ CORRECT — use @utils.setVariables to capture input separately
+collect_input: @utils.setVariables
+   with account_number=...
+verify: @actions.verify_customer
+   with account_number=@variables.account_number
+   set @variables.customer_name = @outputs.customer_name
+```
+
+### Bare Action Names — Always Use `@actions.` Prefix
+
+```yaml
+# ❌ WRONG — bare names in run, templates, and instructions
+run set_user_name
+| Use add_to_cart to add items.
+
+# ✅ CORRECT — always prefix with @actions.
+run @actions.set_user_name
+| Use {!@actions.add_to_cart} to add items.
+```
+
+### `run @actions.X` vs Reasoning-Level Utilities
+
+`run @actions.X` resolves against the topic-level `actions:` block (definitions with `target:`). It does NOT work for reasoning-level utilities like `@utils.setVariables`.
+
+```yaml
+# ❌ WRONG — set_user_name is defined as @utils.setVariables, not a topic-level action
+run @actions.set_user_name   # "Action not found" error
+
+# ✅ CORRECT — use @utils.setVariables directly in reasoning.actions:
+reasoning:
+   actions:
+      set_user_name: @utils.setVariables
+         with user_name=...
+```

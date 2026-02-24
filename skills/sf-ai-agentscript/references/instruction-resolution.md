@@ -30,6 +30,8 @@ Agent Script instructions resolve in a predictable order. Understanding this flo
 | **Templates resolve** | Template syntax resolves to actual values |
 | **Transitions short-circuit** | `transition to` can exit the topic immediately |
 
+> ⚠️ **`run @actions.X` resolution scope**: The `run` directive resolves only against topic-level action definitions (those with a `target:` field). It does NOT work for reasoning-level utilities like `@utils.setVariables`. To use utilities, define them as named actions in `reasoning.actions:` and let the LLM invoke them — do not use `run` with them.
+
 ### Example
 
 ```yaml

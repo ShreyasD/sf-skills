@@ -59,6 +59,9 @@ Agent Script transforms agent development from prompt-based suggestions to **cod
 | **Post-action only on @actions** | `@utils.X` with `set`/`run` | Only `@actions.X` supports post-action |
 | **agent_name must match folder** | Folder: `MyAgent`, config: `my_agent` | Both must be identical (case-sensitive) |
 | **Reserved field names** | `description: string`, `label: string` | Use `descriptions`, `label_text`, or suffix with `_field` |
+| **No `@inputs` in `set`** | `set @variables.x = @inputs.y` (unknown deploy error) | Use `@utils.setVariables` to capture input, then reference via `@variables` |
+| **Always use `@actions.` prefix** | `run set_user_name` or `\| Use add_to_cart` | `run @actions.set_user_name` or `\| Use {!@actions.add_to_cart}` |
+| **`run` only for topic-level actions** | `run @actions.X` where X is `@utils.setVariables` | `run @actions.X` resolves against `actions:` with `target:` — define utilities in `reasoning.actions:` |
 
 ### 🔴 Reserved Field Names (Breaking in Recent Releases)
 
@@ -217,6 +220,8 @@ Level 2: ACTION INVOCATION (in `reasoning.actions:` block)
 1. **Identify deterministic vs. subjective logic** — Deterministic: security checks, thresholds, data lookups. Subjective: greetings, context understanding, NLG.
 2. **Design FSM architecture** — Map topics as states, transitions as edges
 3. **Define variables** — Mutable for state tracking, linked for session context
+
+> 📋 **Discovery Questions**: Use the pre-authoring questionnaire in [references/patterns-quick-ref.md](references/patterns-quick-ref.md#discovery-questions-pre-authoring) to clarify Agent Identity, Topics, State, Actions, and Reasoning requirements before writing any code.
 
 ### Phase 2: Agent Script Authoring
 1. **Create `.agent` file** with required blocks (see Block Structure above)

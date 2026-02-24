@@ -754,3 +754,39 @@ Before deploying an agent, verify:
 - [ ] Navigation back to main menu from all topics
 - [ ] Template expressions use correct syntax `{!@variables.name}`
 - [ ] Consistent indentation (tabs recommended)
+
+---
+
+## Discovery Questions (Pre-Authoring)
+
+> Ask these questions before writing any Agent Script to clarify requirements and avoid rework. Sourced from [AGENT_SCRIPT.md](https://github.com/trailheadapps/agent-script-recipes).
+
+### Agent Identity
+- What is the agent's primary purpose?
+- Who are the end users (customers, employees, partners)?
+- What tone and persona should the agent adopt?
+- What languages must be supported?
+
+### Topics
+- What are the main conversation topics?
+- Which topics require security gates (authentication, authorization)?
+- What is the expected flow between topics (linear, hub-and-spoke, conditional)?
+- Are there topics that should delegate to sub-agents?
+
+### State Management
+- What data must persist across the conversation (mutable variables)?
+- What external data is needed at start (linked variables from session/context)?
+- Are there counters, flags, or accumulators that track progress?
+- What default values make sense for each variable?
+
+### Actions
+- Which actions require Flow targets vs. Apex targets?
+- What are the required inputs and outputs for each action?
+- Which actions need `available when` guards?
+- Are there actions that must chain deterministically (post-action follow-ups)?
+
+### Reasoning
+- Which decisions must be deterministic (code-enforced) vs. LLM-flexible?
+- Where should data be loaded (pre-LLM) vs. displayed (LLM instructions)?
+- Are there escalation thresholds or retry limits?
+- What guardrails must the system instructions enforce?

@@ -16,6 +16,12 @@
 | Custom LWC Type | `lightning__c__CustomTypeName` | Custom component types |
 | Currency field | `lightning__currencyType` | For monetary values |
 | `datetime` | `lightning__dateTimeStringType` | DateTime values (TDD v2.1.0) |
+| `integer` | `lightning__integerType` | Integer numbers (action I/O only) |
+| `double` / `number` | `lightning__doubleType` | Decimal/floating-point numbers (action I/O only) |
+| `object` (structured) | `lightning__objectType` | Complex data structures (action I/O only) |
+| `list` (generic) | `lightning__listType` | Arrays/lists (action I/O only) |
+
+> **Naming variance**: Upstream documentation uses `lightning__dateTimeType` while our TDD-validated testing confirms `lightning__dateTimeStringType`. Both may be valid depending on API version — use `lightning__dateTimeStringType` as the tested default.
 
 ## Agent Script → Lightning Type Mapping (TDD Validated v2.1.0)
 

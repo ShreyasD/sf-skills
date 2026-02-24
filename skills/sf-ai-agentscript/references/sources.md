@@ -4,7 +4,7 @@
 
 | Source | Contribution |
 |--------|--------------|
-| [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) | 20 reference recipes across 4 categories, AGENT_SCRIPT.md rules document, variable patterns, action target catalog |
+| [trailheadapps/agent-script-recipes](https://github.com/trailheadapps/agent-script-recipes) | 20 reference recipes across 4 categories, variable patterns, action target catalog. `.airules/AGENT_SCRIPT.md` rules document contributes error prevention patterns (bare action names, `@inputs` in `set`, `run` vs utility resolution), block ordering spec, and discovery questions. Contributors: pozil, msrivastav13, muenzpraeger, albarivas, charlesw-salesforce (Apache-2.0) |
 | Salesforce Official Documentation | Core syntax, API references, deployment guides |
 | TDD Validation (this skill) | 13 validation agents confirming current-release syntax compatibility |
 | Tribal knowledge interviews | Canvas View bugs, VS Code limitations, credit consumption patterns |
