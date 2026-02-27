@@ -819,6 +819,150 @@ def find_hallucinations(data_dir: str, limit: int, output_format: str):
         sys.exit(1)
 
 
+@cli.command("trace-test")
+@click.option("--org", default="", help="Salesforce org alias (not needed with --cdp-port)")
+@click.option("--agent", default="", help="Agent API name (not needed with --cdp-port)")
+@click.option(
+    "--utterances", required=True,
+    help="YAML file path or comma-separated utterances"
+)
+@click.option(
+    "--output", type=click.Path(), default="./trace-results",
+    help="Output directory for traces and analysis"
+)
+@click.option("--timeout", default=30, help="Seconds to wait per utterance (default: 30)")
+@click.option(
+    "--cdp-port", type=int, default=None,
+    help="Connect to existing Chrome on this port (skips launch/auth/navigate)"
+)
+@click.option("--headed", is_flag=True, default=False,
+              help="Run browser in headed mode (default: headless)")
+@click.option("--builder-url", default=None,
+              help="Direct Builder URL (skips Studio navigation)")
+@click.option("--verbose", is_flag=True, help="Show step-by-step capture progress")
+def trace_test(
+    org: str,
+    agent: str,
+    utterances: str,
+    output: str,
+    timeout: int,
+    cdp_port: Optional[int],
+    headed: bool,
+    builder_url: Optional[str],
+    verbose: bool,
+):
+    """
+    Send test utterances and capture Builder execution traces.
+
+    Launches a browser, authenticates, navigates to the Agentforce Builder,
+    sends each utterance, and captures the full 13-step-type trace from the
+    internal getSimulationPlanTraces API. Produces a terminal report with
+    grounding checks, timing, action results, and AgentScript suggestions.
+
+    Utterances can be a YAML file (list of strings) or comma-separated:
+
+        trace-test --org prod --agent My_Agent --utterances tests.yaml
+
+        trace-test --org prod --agent My_Agent --utterances "Hello,Order 123"
+
+    Output structure:
+
+        trace-results/traces/turn-1.json  (raw PlanSuccessResponse)
+        trace-results/analysis.json       (full analysis)
+        trace-results/report.txt          (terminal report)
+    """
+    from scripts.trace_test_runner import TraceTestRunner, load_utterances
+    from scripts.trace_analyzer import TraceAnalyzer
+
+    output_dir = Path(output)
+
+    # Load utterances
+    try:
+        utterance_list = load_utterances(utterances)
+    except Exception as e:
+        console.print(f"[red]Error loading utterances: {e}[/red]")
+        sys.exit(1)
+
+    if not utterance_list:
+        console.print("[red]Error: No utterances provided.[/red]")
+        sys.exit(1)
+
+    # Validate: need --org and --agent unless using --cdp-port
+    if not cdp_port and (not org or not agent):
+        console.print("[red]Error: --org and --agent are required (unless using --cdp-port).[/red]")
+        sys.exit(1)
+
+    console.print(f"\n[bold cyan]\U0001f50d Trace Test[/bold cyan]")
+    if cdp_port:
+        console.print(f"Mode: [cyan]Connect to Chrome on port {cdp_port}[/cyan]")
+    else:
+        console.print(f"Org: [cyan]{org}[/cyan]")
+        console.print(f"Agent: [cyan]{agent}[/cyan]")
+    console.print(f"Browser: [cyan]{'headed' if headed else 'headless'}[/cyan]")
+    console.print(f"Utterances: {len(utterance_list)}")
+    console.print(f"Output: {output}")
+    if builder_url:
+        console.print(f"Builder URL: [dim]{builder_url[:60]}...[/dim]")
+    console.print("")
+
+    runner = TraceTestRunner(
+        org_alias=org,
+        agent_name=agent,
+        output_dir=output_dir,
+        timeout=timeout,
+        verbose=verbose,
+        cdp_port=cdp_port,
+        headless=not headed,
+        builder_url=builder_url,
+    )
+
+    try:
+        # Inline rendering: each turn panel appears immediately after capture
+        def on_turn_callback(trace_data: dict):
+            """Render per-turn panel immediately after capture."""
+            inline_analyzer = TraceAnalyzer([trace_data])
+            inline_analyzer.render_turn_panel(trace_data, console)
+            sys.stdout.flush()  # Force flush for piped/background/CI modes
+
+        traces = runner.run(utterance_list, on_turn=on_turn_callback)
+
+        # Full analyzer for JSON/report/summary (uses all traces)
+        analyzer = TraceAnalyzer(traces)
+
+        # Write analysis JSON
+        analysis_path = output_dir / "analysis.json"
+        analyzer.to_json(analysis_path)
+        console.print(f"\n[dim]Analysis written to: {analysis_path}[/dim]")
+
+        # Write terminal report to file
+        report_path = output_dir / "report.txt"
+        from rich.console import Console as FileConsole
+        with open(report_path, "w") as f:
+            file_console = FileConsole(file=f, force_terminal=False, width=80)
+            analyzer.render_terminal(file_console)
+        console.print(f"[dim]Report written to: {report_path}[/dim]")
+
+        # Render to terminal
+        analyzer.render_terminal(console)
+
+        # Print summary line
+        console.print(f"\n{analyzer.render_summary_line()}")
+
+        # Exit code based on pass/fail
+        summary = analyzer.to_summary()
+        if summary["status"] != "PASS":
+            sys.exit(1)
+
+    except Exception as e:
+        console.print(f"\n[red]Error: {e}[/red]")
+        if verbose:
+            import traceback
+            console.print(traceback.format_exc())
+        sys.exit(1)
+    finally:
+        runner.cleanup()
+
+
 @cli.command("test-auth")
 @click.option("--org", required=True, help="Salesforce org alias")
 @click.option("--consumer-key", help="External Client App consumer key")
