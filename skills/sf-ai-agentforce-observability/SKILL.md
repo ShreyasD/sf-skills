@@ -43,6 +43,8 @@ Expert in extracting and analyzing Agentforce session tracing data from Salesfor
 | **Troubleshooting** | [references/troubleshooting.md](references/troubleshooting.md) | Common issues & fixes |
 | **Analysis examples** | [references/analysis-examples.md](references/analysis-examples.md) | Session summary & debug timeline output |
 | **Billing & issues** | [references/billing-and-troubleshooting.md](references/billing-and-troubleshooting.md) | Credit consumption & common errors |
+| **Builder trace API** | [references/builder-trace-api.md](references/builder-trace-api.md) | Internal trace endpoint investigation & capture tooling |
+| **Execution lifecycle** | [references/agent-execution-lifecycle.md](references/agent-execution-lifecycle.md) | 6-phase model, script-to-trace mapping, timing analysis |
 
 ---
 
@@ -245,6 +247,12 @@ Based on analysis findings:
 | `extract` | Extract session data | `extract --org prod --days 7` |
 | `extract-tree` | Extract full session tree | `extract-tree --org prod --session-id "a0x..."` |
 | `extract-incremental` | Resume from last run | `extract-incremental --org prod` |
+
+### Builder Trace Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `trace-test` | Capture Builder traces | `trace-test --org prod --agent My_Agent --utterances tests.yaml` |
 
 ### Analysis Commands
 

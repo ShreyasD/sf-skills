@@ -17,7 +17,7 @@ This skill has been validated against live Salesforce orgs and is production-rea
 | **DMO Discovery** | 24 DMOs verified, 3 not found (RAG Quality) |
 | **Live API Validation** | All SQL patterns tested against Data Cloud |
 | **Schema Accuracy** | Verified column names match actual API |
-| **Last Validated** | January 30, 2026 (Vivint-DevInt) |
+| **Last Validated** | January 30, 2026 |
 
 ## Features
 
@@ -166,6 +166,40 @@ stdm_data/
     └── watermark.json
 ```
 
+## Trace Test (Builder Trace Capture)
+
+Captures the full 13-step-type execution trace from the Agentforce Builder's internal API — far richer than the 5 types persisted to Data Cloud.
+
+### Setup
+
+```bash
+# Install trace-test dependencies (Playwright + helpers)
+pip install -r scripts/requirements-trace.txt
+playwright install chromium
+```
+
+### Usage
+
+```bash
+# Basic (headless by default)
+python3 scripts/cli.py trace-test \
+  --org MyOrg --agent My_Agent \
+  --utterances "Hello,What products do you offer?"
+
+# Headed mode (visible browser)
+python3 scripts/cli.py trace-test \
+  --org MyOrg --agent My_Agent \
+  --utterances tests.yaml --headed
+
+# Direct Builder URL (skips Studio navigation, ~15s faster)
+python3 scripts/cli.py trace-test \
+  --org MyOrg --agent My_Agent \
+  --utterances tests.yaml \
+  --builder-url "https://your-org.my.salesforce.com/AgentAuthoring/agentAuthoringBuilder.app#/project?projectId=..."
+```
+
+Builder URLs are cached automatically after first Studio discovery. Subsequent runs skip Studio navigation.
+
 ## CLI Reference
 
 | Command | Description |
@@ -178,6 +212,7 @@ stdm_data/
 | `debug-session` | Show session timeline |
 | `topics` | Topic routing analysis |
 | `count` | Count records per DMO |
+| `trace-test` | Capture Builder execution traces |
 
 See [references/cli-reference.md](references/cli-reference.md) for all options.
 
@@ -239,4 +274,4 @@ Jag Valaiyapathy
 
 ---
 
-*Last updated: January 2026 | Validated against: Vivint-DevInt*
+*Last updated: January 2026 | Validated against live org*

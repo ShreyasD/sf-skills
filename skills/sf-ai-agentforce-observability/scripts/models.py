@@ -7,7 +7,7 @@ Provides type-safe models for:
 - AIAgentInteractionStep (LLM/Action steps)
 - AIAgentMoment (Messages/Summaries)
 
-Schema validated against Vivint-DevInt org (Jan 2026) using Data 360 v65.0 API.
+Schema validated against live org (Jan 2026) using Data 360 v65.0 API.
 Note: Field names use 'AiAgent' (lowercase 'i'), not 'AIAgent'.
 
 Usage:
@@ -361,7 +361,7 @@ MESSAGE_SCHEMA = pa.schema([
 # ============================================================================
 # Quality DMO Schemas (GenAI Content Quality)
 # Note: These DMOs do NOT use ssot__ prefix - different data stream
-# Schema validated against Vivint-DevInt org (Jan 2026)
+# Schema validated against live org (Jan 2026)
 # ============================================================================
 
 GENERATION_SCHEMA = pa.schema([

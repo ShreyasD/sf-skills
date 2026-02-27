@@ -24,12 +24,12 @@ mkdir -p ~/.sf/jwt
 # Naming convention: {org_alias}-agentforce-observability.key
 openssl req -x509 -sha256 -nodes -days 365 \
     -newkey rsa:2048 \
-    -keyout ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key \
-    -out ~/.sf/jwt/Vivint-DevInt-agentforce-observability.crt \
-    -subj "/CN=AgentforceObservability/O=Vivint"
+    -keyout ~/.sf/jwt/YourOrg-agentforce-observability.key \
+    -out ~/.sf/jwt/YourOrg-agentforce-observability.crt \
+    -subj "/CN=AgentforceObservability/O=YourOrg"
 
 # Secure the private key (required - Salesforce rejects world-readable keys)
-chmod 600 ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key
+chmod 600 ~/.sf/jwt/YourOrg-agentforce-observability.key
 ```
 
 ### Step 2: Create External Client App
@@ -89,23 +89,23 @@ In the ECA → **Policies** tab:
 ```bash
 # Option 1: Pass consumer key directly
 python3 scripts/cli.py test-auth \
-    --org Vivint-DevInt \
+    --org YourOrg \
     --consumer-key "3MVG9..."
 
 # Option 2: Use environment variable
 export SF_CONSUMER_KEY="3MVG9..."
-python3 scripts/cli.py test-auth --org Vivint-DevInt
+python3 scripts/cli.py test-auth --org YourOrg
 ```
 
 **Expected output:**
 ```
 Testing Authentication
-Org: Vivint-DevInt
-Key: /Users/you/.sf/jwt/Vivint-DevInt-agentforce-observability.key
+Org: YourOrg
+Key: /Users/you/.sf/jwt/YourOrg-agentforce-observability.key
 
 Getting org info...
-Instance: https://vivint--devint.sandbox.my.salesforce.com
-Username: your.user@vivint.com.devint
+Instance: https://your-org.my.salesforce.com
+Username: your.user@example.com
 Sandbox: True
 
 Testing token generation...
@@ -131,11 +131,11 @@ The CLI resolves the private key path in this order:
 
 ```bash
 # Uses app-specific key automatically
-python3 scripts/cli.py test-auth --org Vivint-DevInt --consumer-key "..."
-# → Resolves to: ~/.sf/jwt/Vivint-DevInt-agentforce-observability.key
+python3 scripts/cli.py test-auth --org YourOrg --consumer-key "..."
+# → Resolves to: ~/.sf/jwt/YourOrg-agentforce-observability.key
 
 # Explicit key path (overrides all defaults)
-python3 scripts/cli.py test-auth --org Vivint-DevInt \
+python3 scripts/cli.py test-auth --org YourOrg \
     --consumer-key "..." \
     --key-path ~/.sf/jwt/custom-key.key
 ```
@@ -181,7 +181,7 @@ RuntimeError: Token exchange failed: invalid_grant
 
 **Verify certificate expiry:**
 ```bash
-openssl x509 -enddate -noout -in ~/.sf/jwt/Vivint-DevInt-agentforce-observability.crt
+openssl x509 -enddate -noout -in ~/.sf/jwt/YourOrg-agentforce-observability.crt
 ```
 
 ### 403 Forbidden
@@ -244,7 +244,7 @@ For automation/CI, set these environment variables:
 
 ```bash
 # Consumer key (org-specific takes priority)
-export SF_VIVINT_DEVINT_CONSUMER_KEY="3MVG9..."
+export SF_YOURORG_CONSUMER_KEY="3MVG9..."
 # or generic fallback
 export SF_CONSUMER_KEY="3MVG9..."
 ```

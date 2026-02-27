@@ -323,7 +323,7 @@ Error: Unexpected token at position X
 
 ## Lessons Learned (Live Deployment - Jan 2026)
 
-Critical discoveries from live testing against Vivint-DevInt org.
+Critical discoveries from live testing against a sandbox org.
 
 ### API Version: v65.0 Recommended
 
