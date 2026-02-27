@@ -82,49 +82,6 @@
       "message": "Hardcoded Salesforce ID detected - consider using Custom Metadata"
     }
   },
-  "auto_approve_policy": {
-    "description": "Rules for auto-approving Bash command permissions",
-    "read_operations": {
-      "patterns": [
-        "sf data query",
-        "sf org display",
-        "sf org list",
-        "sf project retrieve",
-        "sf apex list log",
-        "sf apex get log",
-        "sf sobject describe",
-        "sf org list metadata"
-      ],
-      "auto_approve": true,
-      "reason": "Read-only operations are safe"
-    },
-    "scratch_org_operations": {
-      "patterns": [
-        "--target-org.*scratch",
-        "--target-org.*dev.*scratch"
-      ],
-      "auto_approve": true,
-      "reason": "Scratch orgs are disposable"
-    },
-    "validation_deploys": {
-      "patterns": [
-        "sf project deploy start.*--dry-run",
-        "sf project deploy validate"
-      ],
-      "auto_approve": true,
-      "reason": "Dry-run validations don't modify org"
-    },
-    "require_confirmation": {
-      "patterns": [
-        "--target-org.*(prod|production)",
-        "sf org delete",
-        "DELETE FROM",
-        "git push.*--force"
-      ],
-      "auto_approve": false,
-      "reason": "Destructive or production operations require confirmation"
-    }
-  },
   "skills": {
     "sf-apex": {
       "keywords": [

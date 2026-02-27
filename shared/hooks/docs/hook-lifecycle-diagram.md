@@ -34,10 +34,6 @@ flowchart TB
         H_API["📊 api-version-check.py"]
     end
 
-    subgraph hooks_perm["📌 PermissionRequest Hooks"]
-        H_AUTO["✅ auto-approve.py"]
-    end
-
     subgraph hooks_post["📌 PostToolUse Hooks"]
         H_VALID["🔍 validator-dispatcher.py"]
     end
@@ -64,9 +60,6 @@ flowchart TB
     %% PreToolUse hooks
     S3 -.-> H_GUARD
     S3 -.-> H_API
-
-    %% PermissionRequest hooks
-    S4 -.-> H_AUTO
 
     %% PostToolUse hooks
     S5 -.-> H_VALID
@@ -107,9 +100,6 @@ flowchart TB
     style H_GUARD fill:#fed7aa,stroke:#c2410c,color:#1f2937
     style H_API fill:#fed7aa,stroke:#c2410c,color:#1f2937
 
-    %% Node Styling - PermissionRequest hooks (Green-200)
-    style H_AUTO fill:#a7f3d0,stroke:#047857,color:#1f2937
-
     %% Node Styling - PostToolUse hooks (Violet-200)
     style H_VALID fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
 
@@ -121,7 +111,6 @@ flowchart TB
     %% Hook subgraph styling
     style hooks_session fill:#f0fdfa,stroke:#0f766e,stroke-dasharray:5
     style hooks_pre fill:#fff7ed,stroke:#c2410c,stroke-dasharray:5
-    style hooks_perm fill:#ecfdf5,stroke:#047857,stroke-dasharray:5
     style hooks_post fill:#f5f3ff,stroke:#6d28d9,stroke-dasharray:5
 ```
 
@@ -159,11 +148,11 @@ For terminals and viewers that don't render Mermaid:
 │                 ▼                     │       ┌──────────────┘                  │
 │  ┌─────────────────────────────┐      │       │                                 │
 │  │     3. PRE TOOL USE         │──────┼───────┘                                 │
-│  └──────────────┬──────────────┘      │       ┌───────────────────────────────┐ │
-│                 │                     │       │ ✅ auto-approve.py            │ │
-│                 ▼                     │       └───────────────────────────────┘ │
-│  ┌─────────────────────────────┐      │                      ▲                  │
-│  │   4. PERMISSION REQUEST     │──────┼──────────────────────┘                  │
+│  └──────────────┬──────────────┘      │                                         │
+│                 │                     │                                         │
+│                 ▼                     │                                         │
+│  ┌─────────────────────────────┐      │                                         │
+│  │   4. PERMISSION REQUEST     │      │                                         │
 │  └──────────────┬──────────────┘      │                                         │
 │                 │                     │                                         │
 │                 ▼                     │                                         │
@@ -213,7 +202,6 @@ For terminals and viewers that don't render Mermaid:
 | **SessionStart** | `lsp-prewarm.py` | Spawn LSP servers in background | Background |
 | **PreToolUse** | `guardrails.py` | Block dangerous operations | BLOCK/MODIFY |
 | **PreToolUse** | `api-version-check.py` | Check API version compatibility | WARN |
-| **PermissionRequest** | `auto-approve.py` | Smart auto-approval for safe ops | APPROVE/DENY |
 | **PostToolUse** | `validator-dispatcher.py` | Route to skill-specific validators | Feedback |
 
 ---
@@ -244,7 +232,6 @@ For terminals and viewers that don't render Mermaid:
 | 🟦 Cyan-200 | `#a5f3fc` | Lifecycle event nodes | S1-S10 |
 | 🟩 Teal-200 | `#99f6e4` | SessionStart hooks | org-preflight, lsp-prewarm |
 | 🟧 Orange-200 | `#fed7aa` | Guards/Pre-checks | guardrails, api-version-check |
-| 🟢 Green-200 | `#a7f3d0` | Approval hooks | auto-approve |
 | 🟣 Violet-200 | `#ddd6fe` | Validation | validator-dispatcher |
 | 🔵 Indigo-200 | `#c7d2fe` | Execution | LLM, EXEC |
 | 🟡 Amber-200 | `#fde68a` | Decision points | MORE WORK? |
@@ -262,23 +249,14 @@ PreToolUse → guardrails.py
                    (tool never executes)
 ```
 
-### Pattern 2: Auto-Approval
-
-```
-PermissionRequest → auto-approve.py
-         ├─ Approve: Tool executes without user prompt
-         ├─ Deny: Block with reason
-         └─ No output: Defer to user (shows permission dialog)
-```
-
-### Pattern 3: Feedback Loop
+### Pattern 2: Feedback Loop
 
 ```
 PostToolUse → validator-dispatcher.py → Validates file
                                       → Sends feedback to LLM
 ```
 
-### Pattern 4: Workflow Tracking
+### Pattern 3: Workflow Tracking
 
 ```
 SessionStart → org-preflight.py → Writes ~/.claude/.sf-org-state.json

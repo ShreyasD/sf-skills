@@ -88,10 +88,6 @@ flowchart TB
         H_API["📊 api-version-check.py"]
     end
 
-    subgraph hooks_perm["📌 PermissionRequest Hooks"]
-        H_AUTO["✅ auto-approve.py"]
-    end
-
     subgraph hooks_post["📌 PostToolUse Hooks"]
         H_VALID["🔍 validator-dispatcher.py"]
     end
@@ -127,9 +123,6 @@ flowchart TB
     %% PreToolUse hooks
     S4 -.-> H_GUARD
     S4 -.-> H_API
-
-    %% PermissionRequest hooks
-    S5 -.-> H_AUTO
 
     %% PostToolUse hooks
     S6 -.-> H_VALID
@@ -182,9 +175,6 @@ flowchart TB
     style H_GUARD fill:#fed7aa,stroke:#c2410c,color:#1f2937
     style H_API fill:#fed7aa,stroke:#c2410c,color:#1f2937
 
-    %% Node Styling - PermissionRequest hooks (Green-200)
-    style H_AUTO fill:#a7f3d0,stroke:#047857,color:#1f2937
-
     %% Node Styling - PostToolUse hooks (Violet-200)
     style H_VALID fill:#ddd6fe,stroke:#6d28d9,color:#1f2937
 
@@ -197,7 +187,6 @@ flowchart TB
     %% Hook subgraph styling
     style hooks_session fill:#f0fdfa,stroke:#0f766e,stroke-dasharray:5
     style hooks_pre fill:#fff7ed,stroke:#c2410c,stroke-dasharray:5
-    style hooks_perm fill:#ecfdf5,stroke:#047857,stroke-dasharray:5
     style hooks_post fill:#f5f3ff,stroke:#6d28d9,stroke-dasharray:5
     </div>
 
@@ -213,10 +202,6 @@ flowchart TB
         <div class="legend-item">
             <div class="color-box" style="background:#fed7aa;border-color:#c2410c"></div>
             <span>PreToolUse Hooks</span>
-        </div>
-        <div class="legend-item">
-            <div class="color-box" style="background:#a7f3d0;border-color:#047857"></div>
-            <span>PermissionRequest Hooks</span>
         </div>
         <div class="legend-item">
             <div class="color-box" style="background:#ddd6fe;border-color:#6d28d9"></div>

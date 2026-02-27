@@ -9,7 +9,6 @@ shared/hooks/
 ├── skills-registry.json         # Single source of truth for all skill metadata
 ├── scripts/
 │   ├── guardrails.py            # PreToolUse hook (block/auto-fix dangerous operations)
-│   ├── auto-approve.py          # PermissionRequest hook (smart auto-approval)
 │   └── llm-eval.py              # LLM-powered semantic evaluation (Haiku)
 ├── docs/
 │   ├── hook-lifecycle-diagram.md    # Visual lifecycle diagram with all SF-Skills hooks
@@ -46,20 +45,6 @@ The modernized architecture shifts from **reactive** (catch issues after) to **p
 │                        ↓                                                │
 │              skill-specific                                             │
 │               validators                                                │
-│                                                                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│ PERMISSION LAYER (NEW)                                                  │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  Permission Request → PermissionRequest Hook → Auto-approve or Confirm  │
-│                              ↓                                          │
-│                       auto-approve.py                                   │
-│                              ↓                                          │
-│        ┌─────────────────────────────────────────────────┐              │
-│        │ Read operations → Auto-approve                  │              │
-│        │ Scratch org deploys → Auto-approve              │              │
-│        │ Production deploys → Require confirmation       │              │
-│        └─────────────────────────────────────────────────┘              │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -102,23 +87,7 @@ The modernized architecture shifts from **reactive** (catch issues after) to **p
 **Components:**
 - **Skill-specific validators:** Located in each skill's `hooks/scripts/` directory
 
-### 3. PermissionRequest (Auto-Approval)
-
-**Purpose:** Automatically approve safe operations, require confirmation for risky ones.
-
-**Location:** `scripts/auto-approve.py`
-
-**Policy Matrix:**
-
-| Operation | Org Type | Decision |
-|-----------|----------|----------|
-| Read operations (query, display, retrieve) | Any | AUTO-APPROVE |
-| Deploy/test | Scratch | AUTO-APPROVE |
-| Deploy with --dry-run/--check-only | Sandbox | AUTO-APPROVE |
-| Deploy to production | Production | REQUIRE CONFIRM |
-| DELETE, org delete | Any | REQUIRE CONFIRM |
-
-### 4. LLM-Powered Hooks (Haiku)
+### 3. LLM-Powered Hooks (Haiku)
 
 **Purpose:** Semantic evaluation for complex patterns that can't be detected by regex.
 
@@ -213,23 +182,6 @@ All skills have been migrated from `hooks/hooks.json` to frontmatter:
       "fix": "append LIMIT 200"
     }
   },
-  "auto_approve_policy": {
-    "read_operations": {
-      "patterns": ["sf data query", "sf org display", "sf project retrieve"],
-      "auto_approve": true,
-      "reason": "Read-only operations are safe"
-    },
-    "scratch_org_operations": {
-      "patterns": ["--target-org.*scratch", "-o.*scratch"],
-      "auto_approve": true,
-      "reason": "Scratch orgs are disposable"
-    },
-    "require_confirmation": {
-      "patterns": ["--target-org.*prod", "DELETE", "org delete"],
-      "auto_approve": false,
-      "reason": "Production operations require confirmation"
-    }
-  },
   "skills": { ... }
 }
 ```
@@ -248,14 +200,6 @@ The project's `.claude/hooks.json` wires global hooks:
       "hooks": [{
         "type": "command",
         "command": "python3 ./shared/hooks/scripts/guardrails.py",
-        "timeout": 5000
-      }]
-    }],
-    "PermissionRequest": [{
-      "matcher": "Bash",
-      "hooks": [{
-        "type": "command",
-        "command": "python3 ./shared/hooks/scripts/auto-approve.py",
         "timeout": 5000
       }]
     }]
@@ -353,15 +297,6 @@ hooks:
 1. Check `skills-registry.json` guardrails section
 2. Adjust severity from CRITICAL to HIGH or MEDIUM
 3. Add pattern exception if needed
-
-### Auto-Approve Not Working
-
-1. Verify org type detection:
-   ```bash
-   sf org display --json | jq '.result.isScratch'
-   ```
-
-2. Check pattern matching in `auto_approve_policy`
 
 ---
 

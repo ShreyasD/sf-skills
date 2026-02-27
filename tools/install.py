@@ -1361,24 +1361,6 @@ def get_hooks_config() -> Dict[str, Any]:
                 ],
             }
         ],
-        "PermissionRequest": [
-            {
-                "matcher": "Bash",
-                "hooks": [{
-                    "type": "command",
-                    "command": f"{python_cmd} {scripts_path}/auto-approve.py",
-                    "timeout": 5000
-                }],
-            },
-            {
-                "matcher": "Read",
-                "hooks": [{
-                    "type": "command",
-                    "command": f"{python_cmd} {scripts_path}/auto-approve.py",
-                    "timeout": 5000
-                }],
-            }
-        ],
     }
 
 
@@ -2138,7 +2120,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
         print("""
   📦 WHAT WILL BE INSTALLED:
      • 19 Salesforce skills (sf-apex, sf-flow, sf-metadata, ...)
-     • 11 hook scripts (guardrails, auto-approval, validation)
+     • 10 hook scripts (guardrails, validation)
      • LSP engine (Apex, LWC, AgentScript language servers)
      • Automatic validation, guardrails, and org preflight checks
 

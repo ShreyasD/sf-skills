@@ -182,7 +182,7 @@ def run_validator(validator_path: str, hook_input: dict, timeout: int = 8) -> Op
     try:
         # Pass the hook input via stdin (same format the validator expects)
         result = subprocess.run(
-            ["python3", validator_path],
+            [sys.executable, validator_path],
             input=json.dumps(hook_input),
             capture_output=True,
             text=True,
