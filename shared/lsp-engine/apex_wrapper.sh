@@ -30,6 +30,10 @@
 
 set -euo pipefail
 
+# Source VS Code extension directory discovery
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_vscode_common.sh"
+
 # Configuration
 LOG_FILE="${LSP_LOG_FILE:-/dev/null}"
 JAVA_HOME_OVERRIDE="${JAVA_HOME:-}"
@@ -111,11 +115,9 @@ validate_java_version() {
 
 # Find VS Code Apex extension directory (handles version updates)
 find_apex_extension() {
-    local ext_base="$HOME/.vscode/extensions"
-
-    # Check if VS Code extensions directory exists
-    if [[ ! -d "$ext_base" ]]; then
-        log "VS Code extensions directory not found: $ext_base"
+    local ext_base
+    if ! ext_base=$(find_vscode_ext_dir); then
+        log "VS Code extensions directory not found. Searched: ~/.vscode/extensions, ~/.vscode-server/extensions, ~/.vscode-insiders/extensions, ~/.vscode-server-insiders/extensions, ~/.cursor/extensions"
         return 1
     fi
 
@@ -140,7 +142,7 @@ find_apex_extension() {
         fi
     fi
 
-    log "Apex extension not found in: $ext_base"
+    log "Apex extension not found in: $ext_base (set VSCODE_EXTENSIONS_DIR to override)"
     return 1
 }
 

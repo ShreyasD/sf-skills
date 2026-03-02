@@ -67,7 +67,7 @@ That's it! No VS Code required.
 #!/usr/bin/env python3
 import sys
 import json
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "shared" / "lsp-engine"))
+sys.path.insert(0, str(Path.home() / ".claude" / "lsp-engine"))
 
 from lsp_client import get_diagnostics
 from diagnostics import format_diagnostics_for_claude
@@ -96,9 +96,11 @@ python3 lsp_client.py /path/to/file.agent
 ```
 lsp-engine/
 ├── __init__.py              # Package exports
+├── _vscode_common.sh        # VS Code extension dir discovery (sourced by wrappers)
 ├── agentscript_wrapper.sh   # Shell wrapper for Agent Script LSP
 ├── apex_wrapper.sh          # Shell wrapper for Apex LSP
 ├── lwc_wrapper.sh           # Shell wrapper for LWC LSP
+├── check_lsp_versions.sh    # Environment version checker
 ├── lsp_client.py            # Python LSP client (multi-language)
 ├── diagnostics.py           # Diagnostic formatting
 └── README.md               # This file
@@ -108,10 +110,28 @@ lsp-engine/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `VSCODE_EXTENSIONS_DIR` | Override VS Code extensions directory | Auto-detected (see below) |
 | `LSP_LOG_FILE` | Path to log file | `/dev/null` |
 | `NODE_PATH` | Custom Node.js path (Agent Script) | Auto-detected |
 | `JAVA_HOME` | Custom Java path (Apex) | Auto-detected |
 | `APEX_LSP_MEMORY` | JVM heap size in MB (Apex) | 2048 |
+
+### VS Code Extension Directory Discovery
+
+The shell wrappers automatically search for VS Code extensions in this order:
+
+1. `$VSCODE_EXTENSIONS_DIR` (user override)
+2. `~/.vscode/extensions/` (VS Code desktop)
+3. `~/.vscode-server/extensions/` (VS Code remote SSH / WSL)
+4. `~/.vscode-insiders/extensions/` (VS Code Insiders desktop)
+5. `~/.vscode-server-insiders/extensions/` (VS Code Insiders remote)
+6. `~/.cursor/extensions/` (Cursor IDE)
+
+The first existing directory wins. To force a specific path:
+
+```bash
+export VSCODE_EXTENSIONS_DIR="$HOME/.cursor/extensions"
+```
 
 ## Environment Health Check
 
@@ -208,9 +228,13 @@ To disable the weekly check, remove the `SessionStart` hook from your skill's `h
 
 #### "LSP server not found"
 
-The VS Code Agent Script extension is not installed:
-1. Install from VS Code Marketplace
-2. Verify: `ls ~/.vscode/extensions/salesforce.agent-script-*`
+The VS Code Agent Script extension is not installed or is in a non-standard location:
+1. Install from VS Code Marketplace (or Cursor/Insiders equivalent)
+2. Verify in your IDE's extensions directory, e.g.:
+   - Desktop: `ls ~/.vscode/extensions/salesforce.agent-script-*`
+   - Remote SSH/WSL: `ls ~/.vscode-server/extensions/salesforce.agent-script-*`
+   - Cursor: `ls ~/.cursor/extensions/salesforce.agent-script-*`
+3. Or set `VSCODE_EXTENSIONS_DIR` to point to your extensions directory
 
 #### "Node.js not found"
 
@@ -227,10 +251,13 @@ Upgrade to Node.js 18+:
 
 #### "Apex Language Server not found"
 
-The VS Code Salesforce Extension Pack is not installed:
+The VS Code Salesforce Extension Pack is not installed or is in a non-standard location:
 1. Install from VS Code Marketplace: "Salesforce Extension Pack"
-2. Verify: `ls ~/.vscode/extensions/salesforce.salesforcedx-vscode-apex-*`
-3. Check JAR exists: `ls ~/.vscode/extensions/salesforce.salesforcedx-vscode-apex-*/dist/apex-jorje-lsp.jar`
+2. Verify in your IDE's extensions directory, e.g.:
+   - Desktop: `ls ~/.vscode/extensions/salesforce.salesforcedx-vscode-apex-*/dist/apex-jorje-lsp.jar`
+   - Remote SSH/WSL: `ls ~/.vscode-server/extensions/salesforce.salesforcedx-vscode-apex-*/dist/apex-jorje-lsp.jar`
+   - Cursor: `ls ~/.cursor/extensions/salesforce.salesforcedx-vscode-apex-*/dist/apex-jorje-lsp.jar`
+3. Or set `VSCODE_EXTENSIONS_DIR` to point to your extensions directory
 
 #### "Java not found"
 

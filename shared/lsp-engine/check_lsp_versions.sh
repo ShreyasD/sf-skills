@@ -19,12 +19,16 @@
 
 set -euo pipefail
 
+# Source VS Code extension directory discovery
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_vscode_common.sh"
+
 # Configuration
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/sf-skills"
 CACHE_FILE="$CACHE_DIR/version_check.json"
 TIMESTAMP_FILE="$CACHE_DIR/last_check_timestamp"
 CACHE_TTL_DAYS=7
-VSCODE_EXT_DIR="$HOME/.vscode/extensions"
+VSCODE_EXT_DIR="$(find_vscode_ext_dir 2>/dev/null || echo "$HOME/.vscode/extensions")"
 
 # VS Code extensions to check (parallel arrays for portability)
 EXTENSION_IDS=(

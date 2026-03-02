@@ -28,6 +28,10 @@
 
 set -euo pipefail
 
+# Source VS Code extension directory discovery
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_vscode_common.sh"
+
 # Configuration
 LOG_FILE="${LSP_LOG_FILE:-/dev/null}"
 NODE_BIN="${NODE_PATH:-}"
@@ -66,12 +70,11 @@ find_node() {
 
 # Find VS Code extension directory (handles version updates)
 find_vscode_extension() {
-    local ext_base="$HOME/.vscode/extensions"
+    local ext_base
     local pattern="salesforce.agent-script-language-client-*"
 
-    # Check if VS Code extensions directory exists
-    if [[ ! -d "$ext_base" ]]; then
-        log "VS Code extensions directory not found: $ext_base"
+    if ! ext_base=$(find_vscode_ext_dir); then
+        log "VS Code extensions directory not found. Searched: ~/.vscode/extensions, ~/.vscode-server/extensions, ~/.vscode-insiders/extensions, ~/.vscode-server-insiders/extensions, ~/.cursor/extensions"
         return 1
     fi
 
@@ -84,7 +87,7 @@ find_vscode_extension() {
         return 0
     fi
 
-    log "Agent Script extension not found in: $ext_base"
+    log "Agent Script extension not found in: $ext_base (set VSCODE_EXTENSIONS_DIR to override)"
     return 1
 }
 
