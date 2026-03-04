@@ -295,28 +295,51 @@ def format_output(check_result: Dict, operation: str, source_version: str, org_i
     return output
 
 
+def is_sf_mcp_deploy_retrieve(tool_name: str) -> Optional[str]:
+    """Check if MCP tool is a deploy or retrieve operation.
+
+    Returns operation type ("deploy" or "retrieve") or None.
+    """
+    name_lower = tool_name.lower()
+    if "deploy" in name_lower:
+        return "deploy"
+    if "retrieve" in name_lower:
+        return "retrieve"
+    return None
+
+
 def _process_hook(input_data: Dict) -> Dict:
     """Process the hook logic and return output."""
     tool_name = input_data.get("tool_name", "")
     tool_input = input_data.get("tool_input", {})
 
-    # Only process Bash tool
-    if tool_name != "Bash":
-        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
+    # Check for Salesforce MCP deploy/retrieve tools
+    is_sf_mcp = "salesforce" in tool_name.lower() or tool_name.startswith("mcp__salesforce")
+    if is_sf_mcp:
+        operation = is_sf_mcp_deploy_retrieve(tool_name)
+        if not operation:
+            return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
+        # For MCP tools, extract target org from tool_input params
+        command = tool_input.get("usernameOrAlias", "") or ""
+        if command:
+            command = f"--target-org {command}"
+        # Fall through to version check with the extracted info
+    elif tool_name == "Bash":
+        # Get command
+        command = ""
+        if isinstance(tool_input, dict):
+            command = tool_input.get("command", "")
+        elif isinstance(tool_input, str):
+            command = tool_input
 
-    # Get command
-    command = ""
-    if isinstance(tool_input, dict):
-        command = tool_input.get("command", "")
-    elif isinstance(tool_input, str):
-        command = tool_input
+        if not command:
+            return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
 
-    if not command:
-        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
-
-    # Check if it's a deploy/retrieve command
-    is_match, operation = is_deploy_retrieve_command(command)
-    if not is_match:
+        # Check if it's a deploy/retrieve command
+        is_match, operation = is_deploy_retrieve_command(command)
+        if not is_match:
+            return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
+    else:
         return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}
 
     # Get source API version

@@ -1334,7 +1334,7 @@ def get_hooks_config() -> Dict[str, Any]:
         ],
         "PreToolUse": [
             {
-                "matcher": "Bash",
+                "matcher": "Bash|mcp__salesforce",
                 "hooks": [
                     {
                         "type": "command",

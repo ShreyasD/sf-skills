@@ -35,7 +35,7 @@ Add to .claude/hooks.json:
 {
     "hooks": {
         "PreToolUse": [{
-            "matcher": "Bash",
+            "matcher": "Bash|mcp__salesforce",
             "hooks": [{
                 "type": "command",
                 "command": "python3 ./shared/hooks/scripts/guardrails.py",
@@ -44,6 +44,9 @@ Add to .claude/hooks.json:
         }]
     }
 }
+
+Supports both Bash (sf CLI) and Salesforce MCP server tool calls.
+For MCP tools, all string values in tool_input are scanned for dangerous patterns.
 """
 
 import json
@@ -183,6 +186,29 @@ def load_registry() -> dict:
     except (json.JSONDecodeError, IOError):
         pass
     return {}
+
+
+def is_sf_mcp_tool(tool_name: str) -> bool:
+    """Check if the tool is a Salesforce MCP server tool."""
+    return "salesforce" in tool_name.lower() or tool_name.startswith("mcp__salesforce")
+
+
+def extract_checkable_text(tool_name: str, tool_input: dict) -> str:
+    """Extract text to check for dangerous patterns.
+
+    For Bash: returns the command string.
+    For Salesforce MCP tools: returns all string values from tool_input
+    concatenated, so the same pattern checks apply.
+    """
+    if tool_name == "Bash":
+        return tool_input.get("command", "")
+
+    # For MCP tools, concatenate all string values from the input
+    parts = []
+    for value in tool_input.values():
+        if isinstance(value, str) and len(value) > 3:
+            parts.append(value)
+    return " ".join(parts)
 
 
 def is_output_only_command(command: str) -> bool:
@@ -335,25 +361,26 @@ def main():
     tool_name = input_data.get("tool_name", "")
     tool_input = input_data.get("tool_input", {})
 
-    # Only process Bash commands
-    if tool_name != "Bash":
+    # Only process Bash commands and Salesforce MCP tool calls
+    if tool_name != "Bash" and not is_sf_mcp_tool(tool_name):
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
         sys.exit(0)
 
-    # Get the command
-    command = tool_input.get("command", "")
+    # Extract text to check from tool input (handles both Bash and MCP)
+    command = extract_checkable_text(tool_name, tool_input)
     if not command:
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
         sys.exit(0)
 
-    # Check if this is SF-related (skip guardrails for non-SF commands)
-    if not is_sf_context(command):
+    # For Bash, check if this is SF-related (skip guardrails for non-SF commands)
+    # MCP SF tools are inherently SF-related, so skip this check for them
+    if tool_name == "Bash" and not is_sf_context(command):
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
         sys.exit(0)
 
     # Skip guardrails for output-only commands (echo, printf, etc.)
-    # These just print text, they don't actually execute DML
-    if is_output_only_command(command):
+    # Only applies to Bash — MCP tools always execute
+    if tool_name == "Bash" and is_output_only_command(command):
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
         sys.exit(0)
 
