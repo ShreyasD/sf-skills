@@ -844,6 +844,164 @@
       "description": "Extract and analyze Agentforce session tracing data from Data Cloud",
       "triggerWhen": "user extracts STDM data from Data Cloud, analyzes agent session traces, debugs agent conversations via telemetry, or works with .parquet files from Agentforce",
       "doNotTriggerWhen": "testing agents (use sf-ai-agentforce-testing), Apex debug logs (use sf-debug), or building agents (use sf-ai-agentforce)"
+    },
+    "sf-omnistudio-analyze": {
+      "keywords": [
+        "omnistudio",
+        "omnistudio analyze",
+        "namespace detection",
+        "dependency graph",
+        "impact analysis",
+        "omnistudio inventory",
+        "vlocity",
+        "vlocity_cmt",
+        "vlocity_ins",
+        "omniprocess",
+        "component dependencies",
+        "omnistudio migration"
+      ],
+      "intentPatterns": [
+        "analyze.*omnistudio",
+        "detect.*namespace",
+        "omnistudio.*dependencies",
+        "impact.*analysis.*omnistudio",
+        "inventory.*omnistudio",
+        "omnistudio.*diagram",
+        "omnistudio.*migration",
+        "vlocity.*core"
+      ],
+      "filePatterns": [],
+      "priority": "high",
+      "description": "Cross-cutting OmniStudio analysis for namespace detection, dependency mapping, and impact analysis",
+      "triggerWhen": "user asks about OmniStudio dependencies, wants namespace detection (Core vs vlocity_cmt vs vlocity_ins), needs impact analysis across OmniStudio components, or requests dependency diagrams",
+      "doNotTriggerWhen": "authoring OmniScripts (use sf-omniscript), building FlexCards (use sf-flexcard), creating Integration Procedures (use sf-integration-procedure), or configuring Data Mappers (use sf-datamapper)"
+    },
+    "sf-datamapper": {
+      "keywords": [
+        "datamapper",
+        "data mapper",
+        "dataraptor",
+        "data raptor",
+        "omnidatatransform",
+        "extract",
+        "turbo extract",
+        "transform",
+        "load",
+        "field mapping",
+        "data mapping"
+      ],
+      "intentPatterns": [
+        "create.*data.*mapper",
+        "create.*dataraptor",
+        "build.*extract",
+        "build.*turbo.*extract",
+        "configure.*field.*mapping",
+        "create.*load",
+        "create.*transform",
+        "review.*data.*mapper",
+        "fix.*dataraptor"
+      ],
+      "filePatterns": [
+        "OmniDataTransform.*"
+      ],
+      "priority": "medium",
+      "description": "OmniStudio Data Mapper (formerly DataRaptor) creation and validation with 100-point scoring",
+      "triggerWhen": "user creates Data Mappers, configures field mappings, works with OmniDataTransform metadata, or asks about DataRaptor/Data Mapper patterns",
+      "doNotTriggerWhen": "building Integration Procedures (use sf-integration-procedure), authoring OmniScripts (use sf-omniscript), or analyzing cross-component dependencies (use sf-omnistudio-analyze)"
+    },
+    "sf-integration-procedure": {
+      "keywords": [
+        "integration procedure",
+        "ip",
+        "server-side orchestration",
+        "dataraptor action",
+        "remote action",
+        "http action",
+        "ip action",
+        "omniprocess",
+        "integration procedure action",
+        "procedure chaining"
+      ],
+      "intentPatterns": [
+        "create.*integration.*procedure",
+        "build.*ip",
+        "create.*ip",
+        "orchestrate.*server.*side",
+        "chain.*integration.*procedure",
+        "add.*dataraptor.*action",
+        "add.*remote.*action",
+        "review.*integration.*procedure",
+        "fix.*ip"
+      ],
+      "filePatterns": [
+        "OmniIntegrationProcedure.*"
+      ],
+      "priority": "medium",
+      "description": "OmniStudio Integration Procedure creation and validation with 110-point scoring",
+      "triggerWhen": "user creates Integration Procedures, adds DataRaptor steps, configures Remote Actions, or reviews existing IP configurations",
+      "doNotTriggerWhen": "building OmniScripts (use sf-omniscript), creating Data Mappers directly (use sf-datamapper), or analyzing cross-component dependencies (use sf-omnistudio-analyze)"
+    },
+    "sf-omniscript": {
+      "keywords": [
+        "omniscript",
+        "guided process",
+        "digital experience",
+        "step flow",
+        "omniscript element",
+        "propertysetconfig",
+        "type subtype language",
+        "omniscript step",
+        "omniscript action",
+        "save for later"
+      ],
+      "intentPatterns": [
+        "create.*omniscript",
+        "build.*omniscript",
+        "design.*guided.*process",
+        "create.*digital.*experience",
+        "add.*omniscript.*step",
+        "configure.*omniscript.*element",
+        "review.*omniscript",
+        "fix.*omniscript"
+      ],
+      "filePatterns": [
+        "OmniScript.*"
+      ],
+      "priority": "medium",
+      "description": "OmniStudio OmniScript creation and validation with 120-point scoring",
+      "triggerWhen": "user creates OmniScripts, designs step flows, configures element types, or reviews existing OmniScript configurations",
+      "doNotTriggerWhen": "building FlexCards (use sf-flexcard), creating Integration Procedures directly (use sf-integration-procedure), or analyzing dependencies (use sf-omnistudio-analyze)"
+    },
+    "sf-flexcard": {
+      "keywords": [
+        "flexcard",
+        "flex card",
+        "omniuicard",
+        "ui card",
+        "data source binding",
+        "card layout",
+        "card list",
+        "flyout card",
+        "tabbed card",
+        "child card"
+      ],
+      "intentPatterns": [
+        "create.*flexcard",
+        "build.*flexcard",
+        "create.*flex.*card",
+        "configure.*data.*source",
+        "design.*card.*layout",
+        "add.*action.*button",
+        "review.*flexcard",
+        "fix.*flexcard"
+      ],
+      "filePatterns": [
+        "OmniUiCard.*"
+      ],
+      "priority": "medium",
+      "description": "OmniStudio FlexCard creation and validation with 130-point scoring",
+      "triggerWhen": "user creates FlexCards, configures data sources, designs card layouts, or asks about OmniUiCard metadata",
+      "doNotTriggerWhen": "building OmniScripts (use sf-omniscript), creating Integration Procedures (use sf-integration-procedure), or analyzing dependencies (use sf-omnistudio-analyze)"
     }
   }
 }
