@@ -139,52 +139,7 @@ instructions: ->
 
 ## Metadata Lifecycle
 
-### The Three-Phase Lifecycle
-
-```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   ✏️ Draft   │  →   │  🔒 Commit  │  →   │  ✅ Activate │
-│   EDITABLE  │      │  READ-ONLY  │      │    LIVE     │
-└─────────────┘      └─────────────┘      └─────────────┘
-```
-
-> ⚠️ **Key Insight**: Commit doesn't deploy - it freezes. Activate makes it live.
-
----
-
-### Phase 1: Draft (EDITABLE)
-
-Your working copy. Edit freely, run tests, iterate rapidly.
-
-**Capabilities:**
-- ✅ Edit script content
-- ✅ Preview changes
-- ✅ Run batch tests
-- ✅ No version number yet
-
----
-
-### Phase 2: Commit (READ-ONLY)
-
-Freeze the script. Generates version number and Authoring Bundle.
-
-**Capabilities:**
-- ✅ Script becomes immutable
-- ✅ Authoring Bundle compiled
-- ✅ Version number assigned (v1.0)
-- ✅ Ready for activation
-
----
-
-### Phase 3: Activate (LIVE)
-
-Deploy to production. Assign to Connections and go live.
-
-**Capabilities:**
-- ✅ Assign to Connections (Slack, Chat)
-- ✅ Monitor in real-time
-- ✅ Agent goes live
-- ✅ Rollback if needed
+> See [cli-guide.md](cli-guide.md#three-phase-lifecycle) for the Draft -> Commit -> Activate lifecycle.
 
 ---
 
@@ -218,6 +173,61 @@ test_case:
     action_sequence: true
     coherence_min: 4
 ```
+
+---
+
+## Context Variable Injection in Tests
+
+> Context variables control agent behavior at the session level. Injecting them correctly in tests is critical for testing auth-gated flows, routing logic, and action execution.
+
+### YAML Test Spec Format
+
+Context variables in `sf agent test` YAML specs use **bare names** (not `$Context.` prefixed):
+
+```yaml
+testCases:
+  - name: "Test post-auth routing"
+    utterance: "I need to check my account"
+    contextVariables:
+      - name: RoutableId           # Bare name, NOT $Context.RoutableId
+        value: "0MwXXXXXXXXXXXX"  # Real MessagingSession ID
+      - name: CaseId
+        value: "500XXXXXXXXXXXXX"
+      - name: Verified_Check       # Bypass auth flow in tests
+        value: "true"
+    expectedTopic: Account_Management
+```
+
+### Key Patterns
+
+| Pattern | Value | Effect |
+|---------|-------|--------|
+| `RoutableId` | Real MessagingSession ID | Actions receive real `recordId` instead of topic internal name |
+| `CaseId` | Real Case ID | Flows that reference `$Context.CaseId` work correctly |
+| `Verified_Check=true` | String "true" | Unlocks auth-gated topics (bypasses verification flow in tests) |
+
+### conversationHistory for Multi-Turn Tests
+
+For multi-turn test scenarios, the `conversationHistory` block provides prior conversation context. The `topic` field in conversation history resolves **local developer names** (no hash suffix needed):
+
+```yaml
+testCases:
+  - name: "Follow-up after product help"
+    utterance: "Actually, I want to leave feedback"
+    conversationHistory:
+      - role: user
+        content: "My doorbell camera isn't working"
+      - role: assistant
+        content: "I can help with that. Let me look up your devices."
+        topic: Product_Help    # Local name, NOT Product_Help_16jXXX
+    expectedTopic: Feedback
+```
+
+### Prefix Resolution
+
+Both bare names and `$Context.` prefixed names work at runtime — the platform resolves both. Recommend `$Context.` prefix for clarity in documentation, but use bare names in YAML specs (the YAML parser expects bare names).
+
+> **Cross-reference**: For Evaluation API testing patterns with state injection, see the `sf-ai-agentforce-testing` skill.
 
 ---
 

@@ -88,6 +88,18 @@ sf agent publish authoring-bundle --api-name ProntoRefund -o TARGET_ORG
 sf project retrieve start --metadata Agent:ProntoRefund --target-org sandbox --json
 ```
 
+> **⚠️ Flow Version Mismatch Warning**: `sf project retrieve start --metadata Flow:FlowName` retrieves the **latest** Flow version, which may be Draft or Obsolete — NOT necessarily the active version. The Agent Script publisher validates action I/O against the **active** Flow version's inputs/outputs. If the latest version has different I/O than the active version (e.g., a renamed input parameter), your action definition will compile locally but fail on publish.
+>
+> **How to verify the active Flow version's inputs:**
+> ```bash
+> # 1. Find the active version ID
+> sf data query --query "SELECT ActiveVersionId, LatestVersionId FROM FlowDefinitionView WHERE ApiName = 'My_Flow_Name' LIMIT 1" -o TARGET_ORG --json
+>
+> # 2. If ActiveVersionId != LatestVersionId, inspect the active version:
+> sf data query --query "SELECT Id, VersionNumber, Status FROM FlowVersionView WHERE FlowDefinitionViewId = 'DEFINITION_ID' AND Status = 'Active'" -o TARGET_ORG --json
+> ```
+> Always define your action `inputs:` / `outputs:` to match the **active** Flow version, not the latest retrieved metadata.
+
 ### Step 2: Edit
 
 ```bash

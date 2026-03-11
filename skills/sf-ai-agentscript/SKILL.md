@@ -11,15 +11,15 @@ description: >
 license: MIT
 compatibility: "Requires Agentforce license, API v66.0+, Einstein Agent User"
 metadata:
-  version: "2.4.0"
+  version: "2.5.0"
   author: "Jag Valaiyapathy"
   scoring: "100 points across 6 categories"
   validated: "0-shot generation tested (Pet_Adoption_Advisor, TechCorp_IT_Agent, Quiz_Master, Expense_Calculator, Order_Processor). Agent user setup validated against ORM1, ORM2, AutomotiveSupport, SalesforceProductAssistant."
   # Validation Framework
-  last_validated: "2026-03-07"
+  last_validated: "2026-03-11"
   validation_status: "PASS"
   validation_agents: 24
-  validate_by: "2026-04-06"  # 30 days from last validation
+  validate_by: "2026-04-10"  # 30 days from last validation
   validation_org: "AgentforceTesting"
 ---
 
@@ -360,7 +360,7 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 | `sf agent preview` hangs | Ran interactive mode | Use subcommands `start`/`send`/`end` with `--json` |
 | Linked variables empty in preview | Context vars not injected | `sf agent preview` can't inject `@context`/`@session` — use Runtime API |
 
-> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 20 platform bugs and workarounds.
+> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 22 platform bugs and workarounds.
 
 ### Verification Protocol
 
@@ -416,6 +416,7 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 | Instruction resolution | [references/instruction-resolution.md](references/instruction-resolution.md) | Three-phase execution model |
 | Data & multi-agent | [references/grounding-multiagent.md](references/grounding-multiagent.md) | Retriever actions & SOMA patterns |
 | Debugging | [references/debugging-guide.md](references/debugging-guide.md) | Trace analysis & forensics |
+| Metadata lifecycle | [references/metadata-lifecycle.md](references/metadata-lifecycle.md) | Agent versioning, cleanup & deletion patterns |
 | Preview test loop | [references/preview-test-loop.md](references/preview-test-loop.md) | Smoke test loop before publish |
 | Testing | [references/testing-guide.md](references/testing-guide.md) | Batch testing & quality metrics |
 | Prompt template actions | [references/action-prompt-templates.md](references/action-prompt-templates.md) | `generatePromptResponse://` binding, grounded data |
@@ -490,4 +491,4 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 
 > See [references/sources.md](references/sources.md) for full source attributions (trailheadapps/agent-script-recipes, @kunello PR #20, aquivalabs/my-org-butler, and more).
 
-> See [references/version-history.md](references/version-history.md) for the complete changelog from v1.0.0 through v2.3.0.
+> See [references/version-history.md](references/version-history.md) for the complete changelog from v1.0.0 through v2.5.0.

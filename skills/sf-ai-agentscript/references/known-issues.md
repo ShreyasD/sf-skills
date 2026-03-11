@@ -228,20 +228,6 @@
 
 ---
 
-### Issue 16: `connections:` (plural) wrapper block not valid — use `connection messaging:` (singular)
-- **Status**: RESOLVED
-- **Date Discovered**: 2026-02-16
-- **Date Resolved**: 2026-02-16
-- **Affects**: Agent Script escalation routing configuration
-- **Symptom**: CLI validation rejects `connections:` (plural wrapper) block with `SyntaxError: Invalid syntax after conditional statement`.
-- **Root Cause**: The correct syntax is `connection messaging:` (singular, standalone top-level block) — NOT the `connections:` plural wrapper shown in some docs and `future_recipes/`. The `connection <channel>:` block is a Beta Feature available on production orgs.
-- **Resolution**: Use `connection messaging:` as a standalone block (no wrapper). Both minimal form (`adaptive_response_allowed` only) and full form (with `outbound_route_type`, `outbound_route_name`, `escalation_message`) are validated.
-- **CRITICAL**: `outbound_route_name` requires `flow://` prefix — bare API name causes `ERROR_HTTP_404` on publish. Correct format: `"flow://My_Flow_Name"`.
-- **All-or-nothing rule**: When `outbound_route_type` is present, all three route properties are required.
-- **Validated on**: YourOrg (Your_Agent_Name), 2026-02-16
-
----
-
 ### Issue 17: `EinsteinAgentApiChannel` surfaceType not available on all orgs
 - **Status**: OPEN
 - **Date Discovered**: 2026-02-16
@@ -283,7 +269,8 @@
   </plannerSurfaces>
   ```
 - **Note**: The `outboundRouteConfigs` should mirror the Messaging surface config. If no routing is configured, omit `outboundRouteConfigs`.
-- **Validated on**: YourOrg (Your_Agent_Name v22), 2026-02-17
+- **Note**: `outboundRouteName` in compiled XML does NOT need `flow://` prefix — the publisher strips it during compilation. Both forms work in production XML.
+- **Validated on**: Production org, 2026-02-17
 
 ---
 
@@ -331,9 +318,50 @@
 
 ---
 
+### Issue 21: Old GenAiPlannerBundle versions block Apex class deletion
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-10
+- **Affects**: Apex class lifecycle when iterating agent versions
+- **Symptom**: `sf project delete source --metadata ApexClass:MyClass` fails with "setup object in use" even though the Apex class is only referenced by inactive/old GenAiPlannerBundle versions. The current active bundle may reference a different (newer) Apex class, but old bundles still hold GenAiFunction references to the original.
+- **Root Cause**: Each `sf agent publish authoring-bundle` creates a new GenAiPlannerBundle version. Old versions remain in the org and retain `GenAiPluginActionDefinition` records that reference the Apex class via `GenAiFunction`. The platform blocks deletion of any metadata referenced by ANY GenAiFunction — active or not.
+- **Workaround**: Delete old bundles using the Orphan-Then-Delete pattern (Tooling API PATCH to null `PlannerId` on child `GenAiPluginDefinition` records, then DELETE the parent `GenAiPlannerBundle`). After all referring bundles are removed, the Apex class can be deleted normally.
+  - **Note**: Apex test classes (not referenced by GenAiFunction) can be deleted freely at any time.
+- **Open Questions**: Will Salesforce add cascade cleanup for inactive bundle versions?
+- **References**: See [metadata-lifecycle.md](metadata-lifecycle.md) for the full Orphan-Then-Delete pattern and API comparison table.
+
+---
+
+### Issue 22: Flow version drift causes publish failure
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-10
+- **Affects**: Action definitions targeting `flow://` with I/O schemas
+- **Symptom**: `sf agent publish authoring-bundle` fails with I/O mismatch errors when the action's `inputs:` / `outputs:` block matches the latest Flow version but NOT the active Flow version. The publisher validates against the **active** version's I/O contract.
+- **Root Cause**: `sf project retrieve start --metadata Flow:FlowName` retrieves the **latest** Flow version, which may be Draft or Obsolete. If the latest version renamed, added, or removed inputs/outputs compared to the active version, the locally-defined action I/O will not match what the publisher expects.
+- **Example**: Flow `Locate_Items` has v2 (active) with input `IncomingCaseId` and v5 (latest, Obsolete) with input `RecordId`. Retrieving the Flow gives v5 metadata, so the developer defines `inputs: record_id: string` — but publish validates against v2's `IncomingCaseId`.
+- **Workaround**: Before defining action I/O, verify the active Flow version's inputs:
+  ```bash
+  sf data query --query "SELECT ActiveVersionId, LatestVersionId FROM FlowDefinitionView WHERE ApiName = 'My_Flow' LIMIT 1" -o TARGET_ORG --json
+  ```
+  If `ActiveVersionId != LatestVersionId`, inspect the active version's I/O before writing your action definition.
+- **Open Questions**: Will `sf project retrieve start` gain a `--active-version` flag for Flows?
+- **References**: See [metadata-lifecycle.md](metadata-lifecycle.md) § "Flow Version Drift" and [cli-guide.md](cli-guide.md) § "Step 1: Retrieve" warning box.
+
+---
+
 ## Resolved Issues
 
-*(Move issues here when they are fixed by Salesforce or a confirmed workaround is validated.)*
+### Issue 16: `connections:` (plural) wrapper block not valid — use `connection messaging:` (singular)
+- **Status**: RESOLVED
+- **Date Discovered**: 2026-02-16
+- **Date Resolved**: 2026-02-16
+- **Affects**: Agent Script escalation routing configuration
+- **Symptom**: CLI validation rejects `connections:` (plural wrapper) block with `SyntaxError: Invalid syntax after conditional statement`.
+- **Root Cause**: The correct syntax is `connection messaging:` (singular, standalone top-level block) — NOT the `connections:` plural wrapper shown in some docs and `future_recipes/`. The `connection <channel>:` block is a Beta Feature available on production orgs.
+- **Resolution**: Use `connection messaging:` as a standalone block (no wrapper). Both minimal form (`adaptive_response_allowed` only) and full form (with `outbound_route_type`, `outbound_route_name`, `escalation_message`) are validated.
+- **CRITICAL**: `outbound_route_name` requires `flow://` prefix — bare API name causes `ERROR_HTTP_404` on publish. Correct format: `"flow://My_Flow_Name"`.
+- **All-or-nothing rule**: When `outbound_route_type` is present, all three route properties are required.
+- **Note**: `outboundRouteName` in compiled XML does NOT need the `flow://` prefix — the publisher strips it during compilation. Both forms work in production XML.
+- **Validated on**: Production org, 2026-02-16
 
 ---
 
@@ -355,4 +383,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-03-04*
+*Last updated: 2026-03-11*

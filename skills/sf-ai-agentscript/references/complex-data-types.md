@@ -11,7 +11,8 @@
 | `boolean` | *(none needed)* | Primitive type |
 | `object` (SObject) | `lightning__recordInfoType` | Use for Account, Contact, etc. |
 | `list[string]` | `lightning__textType` | Collection of text values |
-| `list[object]` | `lightning__textType` | Serialized as JSON text |
+| `list[object]` (JSON text) | `lightning__textType` | Serialized as JSON text |
+| `list[object]` (SObject collection) | `lightning__recordInfoType` | **USE THIS for Flow SObject outputs** |
 | Apex Inner Class | `@apexClassType/NamespacedClass__InnerClass` | Namespace required |
 | Custom LWC Type | `lightning__c__CustomTypeName` | Custom component types |
 | Currency field | `lightning__currencyType` | For monetary values |
@@ -35,5 +36,19 @@
 | `datetime` | `lightning__dateTimeStringType` | `DateTime` | **Actions only** — not valid for variables |
 | `date` | `lightning__dateType` | `Date` | Valid for both variables and actions |
 | `currency` | `lightning__currencyType` | `Decimal` | Annotated with currency type |
+
+## Flow Type -> Agent Script Mapping (Production-Validated)
+
+> When defining action I/O for `flow://` targets, use this table to map Flow variable types to Agent Script declarations.
+
+| Flow Type | Agent Script Type | `complex_data_type_name` | Notes |
+|-----------|------------------|--------------------------|-------|
+| `String` | `string` | *(none needed)* | Or `lightning__textType` (optional) |
+| `Date` | `object` | `lightning__dateType` | Must use `object`, not `date` |
+| `DateTime` | `object` | `lightning__dateTimeStringType` | NOT `lightning__dateTimeType` |
+| `Boolean` | `boolean` | *(none needed)* | Primitive type |
+| `SObject` collection | `list[object]` | `lightning__recordInfoType` | NOT `lightning__objectType` |
+
+> **Common Mistake**: Using `lightning__textType` for SObject collection outputs. The publisher accepts it but the LLM receives serialized JSON text instead of structured records, breaking field access patterns.
 
 **Pro Tip**: Don't manually edit `complex_data_type_name` - use the UI dropdown in **Agentforce Assets > Action Definition**, then export/import the action definition.

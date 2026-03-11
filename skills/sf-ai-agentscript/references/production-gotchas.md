@@ -274,6 +274,55 @@ sf agent publish authoring-bundle --api-name MyAgent -o TARGET_ORG
 
 > **Cross-reference**: These same words are also reserved as Agent Script variable/field names. See [SKILL.md](../SKILL.md) reserved field names section.
 
+## Boolean-to-String Coercion Hazard
+
+> **Production impact**: Non-deterministic "Something went wrong" (SWW) errors scattered across turns. Extremely difficult to diagnose because failures are intermittent.
+
+**The Problem**: When a Flow or Apex action outputs a `Boolean` value and you capture it into a `mutable string` variable, then compare with `== "true"`, the coercion is non-deterministic. Some turns coerce `True` -> `"true"` correctly; others produce `"True"`, `"1"`, or empty string — causing silent routing failures.
+
+```yaml
+# ❌ HAZARDOUS — Boolean output into string variable
+variables:
+   verified: mutable string = "false"
+
+actions:
+   verify: @actions.verify_user
+      target: "flow://Verify_User"
+      outputs:
+         verified_result: boolean   # Flow outputs Boolean
+
+# In reasoning:
+set @variables.verified = @outputs.verified_result    # Boolean -> string coercion
+if @variables.verified == "true":                     # Non-deterministic match!
+   transition to @topic.protected_area
+```
+
+**Fix Option A** (preferred): Use `mutable boolean` and compare with `== True`:
+```yaml
+variables:
+   verified: mutable boolean = False
+
+# In reasoning:
+set @variables.verified = @outputs.verified_result    # Boolean -> boolean, no coercion
+if @variables.verified == True:                       # Deterministic!
+   transition to @topic.protected_area
+```
+
+**Fix Option B**: Have the Flow/Apex output an explicit `String` ("true"/"false") instead of Boolean:
+```yaml
+# Flow/Apex outputs String "true" or "false" explicitly
+outputs:
+   verified_result: string   # Already a string, no coercion
+
+# In reasoning:
+set @variables.verified = @outputs.verified_result    # String -> string
+if @variables.verified == "true":                     # Deterministic!
+```
+
+**Production validation**: Switching from Boolean->String coercion to explicit String output dropped SWW errors from scattered (multiple per session) to 1/61 turns (on an unrelated external callout).
+
+---
+
 ## Language Block Quirks
 
 - Hebrew and Indonesian appear **twice** in the language dropdown
