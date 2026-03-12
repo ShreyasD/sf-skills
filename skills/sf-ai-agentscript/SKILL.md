@@ -276,10 +276,13 @@ Validator output is now grouped into human-readable sections:
 - **Targets & permissions**
 - **Runtime gotchas**
 
-It also prints a final recommendation such as:
-- `Fix blocking issues before preview/publish`
-- `Safe to preview. Review warnings before publish`
-- `Safe to preview and publish`
+It also prints:
+- a top summary count (`blocking / warnings / informational / passing`)
+- confidence labels such as `Compiler rule`, `Proven publish blocker`, `Likely runtime risk`, and `Configuration drift / publish risk`
+- a final recommendation such as:
+  - `Fix blocking issues before preview/publish`
+  - `Safe to preview. Review warnings before publish`
+  - `Safe to preview and publish`
 
 For Service Agents with targets, the validator also checks:
 - `AgentforceServiceAgentUser` permission set/group assignment on the agent user
