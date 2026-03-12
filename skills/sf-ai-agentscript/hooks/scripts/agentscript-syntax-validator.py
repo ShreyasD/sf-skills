@@ -3,22 +3,32 @@
 Agent Script Syntax Validator
 =============================
 
-PostToolUse hook that validates .agent files for common syntax errors
-based on Agent Script DSL documentation.
+PostToolUse hook that validates .agent files for common syntax errors and
+high-value production gotchas documented in the sf-ai-agentscript skill.
 
-Checks for:
-- Mixed tabs and spaces (compilation error)
+Checks include:
+- Mixed tabs and spaces
 - Lowercase booleans (must be True/False)
-- Missing required blocks (system, config, topic, start_agent)
-- Missing default_agent_user in config
-- Variables declared as both mutable AND linked
-- Undefined topic references in transitions
-- Post-action checks not at top of instructions
-
-Usage:
-    Triggered automatically by hooks.json configuration
-    Input: JSON from stdin with tool_name and tool_input
-    Output: Diagnostic messages to stdout (or empty if valid)
+- Missing required blocks
+- Missing/invalid config fields
+- Service vs Employee agent rules for default_agent_user
+- Exactly one start_agent
+- Duplicate or colliding topic/start_agent names
+- Naming rule violations
+- Invalid `connections:` wrapper (must use `connection messaging:`)
+- Variables declared as both mutable and linked
+- Reserved/context-colliding variable names
+- Undefined @topic references
+- Multiline topic/start_agent description gotcha
+- before_reasoning/after_reasoning instructions wrapper gotcha
+- Empty list literal expression gotcha
+- `@inputs` in `set` gotcha
+- Bare action names in `run`
+- Action metadata warnings for @utils.transition
+- Prompt output `is_displayable: True` gotcha
+- `date` type in action I/O runtime gotcha
+- is_required advisory hint
+- Employee-agent-only / service-agent-only patterns
 """
 
 import json
@@ -26,28 +36,96 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 
 class AgentScriptValidator:
-    """Validates Agent Script syntax for common errors."""
+    """Validates Agent Script syntax and common production gotchas."""
+
+    NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,79}$")
+    VARIABLE_DECL_PATTERN = re.compile(
+        r"^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(mutable|linked)\b",
+        re.IGNORECASE,
+    )
+    BLOCK_NAME_PATTERN = re.compile(r"^(topic|start_agent)\s+([A-Za-z][A-Za-z0-9_]*)\s*:")
+    ACTION_DECL_PATTERN = re.compile(r"^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$")
+    IO_FIELD_PATTERN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([A-Za-z][A-Za-z0-9_\[\]]*)\s*(?:#.*)?$")
+
+    RESERVED_VARIABLE_NAMES = {
+        "Locale",
+        "Channel",
+        "Status",
+        "Origin",
+    }
+
+    INVALID_TRANSITION_PROPERTIES = {
+        "label",
+        "require_user_confirmation",
+        "include_in_progress_indicator",
+        "progress_indicator_message",
+        "is_required",
+        "is_user_input",
+        "is_displayable",
+        "is_used_by_planner",
+    }
+
+    TOP_LEVEL_ENDERS = (
+        "config:",
+        "variables:",
+        "system:",
+        "knowledge:",
+        "language:",
+        "connection ",
+        "connections:",
+        "topic ",
+        "start_agent ",
+    )
 
     def __init__(self, content: str, file_path: str):
         self.content = content
         self.file_path = file_path
-        self.lines = content.split('\n')
-        self.errors: List[Tuple[int, str, str]] = []  # (line_num, severity, message)
+        self.lines = content.split("\n")
+        self.errors: List[Tuple[int, str, str]] = []
         self.warnings: List[Tuple[int, str, str]] = []
+
+        self.config_fields: Dict[str, Tuple[str, int]] = {}
+        self.topic_names: Dict[str, int] = {}
+        self.start_agent_names: Dict[str, int] = {}
+        self.variable_names: Dict[str, int] = {}
+        self.defined_topics: Set[str] = set()
+        self.connection_messaging_lines: List[int] = []
+        self.messaging_linked_var_lines: List[int] = []
+        self.action_definitions: List[Dict] = []
+        self.multiline_description_issues: List[Tuple[int, str]] = []
+        self.lifecycle_instruction_wrappers: List[Tuple[int, str]] = []
+        self.action_input_required_flags: List[Tuple[int, str, str]] = []
+
+        self._parse_structure()
 
     def validate(self) -> dict:
         """Run all validations and return results."""
         self._check_mixed_indentation()
         self._check_boolean_case()
         self._check_required_blocks()
-        self._check_default_agent_user()
+        self._check_config_fields()
+        self._check_start_agent_count()
+        self._check_name_collisions()
+        self._check_naming_rules()
+        self._check_invalid_connections_wrapper()
         self._check_mutable_linked_conflict()
+        self._check_reserved_variable_names()
         self._check_undefined_topics()
+        self._check_multiline_descriptions()
+        self._check_lifecycle_instruction_wrappers()
         self._check_post_action_position()
+        self._check_empty_list_literals()
+        self._check_inputs_in_set()
+        self._check_bare_run_actions()
+        self._check_action_metadata_context()
+        self._check_prompt_output_displayability()
+        self._check_date_type_in_action_io()
+        self._check_is_required_advisories()
+        self._check_employee_agent_gotchas()
 
         return {
             "success": len(self.errors) == 0,
@@ -56,191 +134,531 @@ class AgentScriptValidator:
             "file_path": self.file_path,
         }
 
+    @staticmethod
+    def _indent(raw_line: str) -> int:
+        expanded = raw_line.expandtabs(4)
+        return len(expanded) - len(expanded.lstrip(" "))
+
+    @staticmethod
+    def _strip_quotes(value: str) -> str:
+        value = value.strip()
+        if len(value) >= 2 and ((value[0] == '"' and value[-1] == '"') or (value[0] == "'" and value[-1] == "'")):
+            return value[1:-1]
+        return value
+
+    def _add_error(self, line_num: int, message: str):
+        self.errors.append((line_num, "error", message))
+
+    def _add_warning(self, line_num: int, message: str):
+        self.warnings.append((line_num, "warning", message))
+
+    def _flush_action(self, current_action: Optional[Dict]):
+        if current_action:
+            self.action_definitions.append(current_action)
+
+    def _parse_structure(self):
+        """Parse enough structure to support context-aware validation rules."""
+        current_top: Optional[str] = None
+        current_action: Optional[Dict] = None
+        actions_mode: Optional[str] = None
+        actions_indent: Optional[int] = None
+        reasoning_indent: Optional[int] = None
+        current_io: Optional[Dict] = None
+        current_io_field: Optional[Dict] = None
+        lifecycle_block: Optional[Dict] = None
+
+        for i, raw_line in enumerate(self.lines, 1):
+            indent = self._indent(raw_line)
+            stripped = raw_line.strip()
+
+            if not stripped or stripped.startswith("#"):
+                continue
+
+            # Close nested contexts when indentation decreases
+            if lifecycle_block and indent <= lifecycle_block["indent"]:
+                lifecycle_block = None
+
+            if current_io_field and indent <= current_io_field["indent"]:
+                current_io_field = None
+
+            if current_io and indent <= current_io["indent"]:
+                current_io = None
+
+            if current_action and indent <= current_action["indent"]:
+                self._flush_action(current_action)
+                current_action = None
+                current_io = None
+                current_io_field = None
+
+            if actions_mode and actions_indent is not None and indent <= actions_indent:
+                actions_mode = None
+                actions_indent = None
+
+            if reasoning_indent is not None and indent <= reasoning_indent:
+                reasoning_indent = None
+
+            # Top-level blocks
+            if indent == 0:
+                current_top = None
+                lifecycle_block = None
+
+                if stripped == "config:":
+                    current_top = "config"
+                    continue
+                if stripped == "variables:":
+                    current_top = "variables"
+                    continue
+                if stripped == "knowledge:":
+                    current_top = "knowledge"
+                    continue
+                if stripped == "language:":
+                    current_top = "language"
+                    continue
+                if stripped == "system:":
+                    current_top = "system"
+                    continue
+                if stripped == "connections:":
+                    current_top = "connections"
+                    continue
+                if stripped.startswith("connection messaging:"):
+                    self.connection_messaging_lines.append(i)
+                    current_top = "connection"
+                    continue
+                if stripped.startswith("connection "):
+                    current_top = "connection"
+                    continue
+
+                block_match = self.BLOCK_NAME_PATTERN.match(stripped)
+                if block_match:
+                    kind, name = block_match.groups()
+                    if kind == "topic":
+                        self.topic_names.setdefault(name, i)
+                        self.defined_topics.add(name)
+                    else:
+                        self.start_agent_names.setdefault(name, i)
+                        self.defined_topics.add(name)
+                    current_top = kind
+                    continue
+
+            # Parse config fields
+            if current_top == "config" and indent > 0:
+                field_match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", stripped)
+                if field_match:
+                    field, value = field_match.groups()
+                    self.config_fields[field] = (self._strip_quotes(value), i)
+                continue
+
+            # Parse variables block
+            if current_top == "variables" and indent > 0:
+                var_match = self.VARIABLE_DECL_PATTERN.match(stripped)
+                if var_match:
+                    name, modifier = var_match.groups()
+                    self.variable_names.setdefault(name, i)
+                if "source:" in stripped and ("@MessagingSession." in stripped or "@MessagingEndUser." in stripped):
+                    self.messaging_linked_var_lines.append(i)
+                continue
+
+            # Parse topic/start_agent internals
+            if current_top in {"topic", "start_agent"} and indent > 0:
+                if stripped.startswith("description:"):
+                    desc_value = stripped.split(":", 1)[1].strip()
+                    if desc_value in {"|", ">", "|-", ">-"}:
+                        self.multiline_description_issues.append((i, current_top))
+                    elif desc_value == "":
+                        self.multiline_description_issues.append((i, current_top))
+                    continue
+
+                if stripped in {"before_reasoning:", "after_reasoning:"}:
+                    lifecycle_block = {"name": stripped[:-1], "indent": indent}
+                    continue
+
+                if lifecycle_block and indent > lifecycle_block["indent"] and stripped.startswith("instructions:"):
+                    self.lifecycle_instruction_wrappers.append((i, lifecycle_block["name"]))
+                    continue
+
+                if stripped == "reasoning:":
+                    reasoning_indent = indent
+                    continue
+
+                if stripped == "actions:":
+                    if reasoning_indent is not None and indent > reasoning_indent:
+                        actions_mode = "reasoning"
+                    else:
+                        actions_mode = "definition"
+                    actions_indent = indent
+                    continue
+
+                if actions_mode == "definition" and actions_indent is not None and indent > actions_indent:
+                    if current_action is None or indent == current_action["indent"]:
+                        action_match = self.ACTION_DECL_PATTERN.match(stripped)
+                        if action_match:
+                            name, remainder = action_match.groups()
+                            if name not in {"inputs", "outputs", "target", "description", "label", "source"}:
+                                current_action = {
+                                    "name": name,
+                                    "line": i,
+                                    "indent": indent,
+                                    "kind": "definition",
+                                    "inline": remainder.strip(),
+                                    "target": None,
+                                    "target_line": None,
+                                    "has_available_when": False,
+                                    "io_fields": [],
+                                    "invalid_transition_properties": [],
+                                    "required_input_lines": [],
+                                    "prompt_output_display_lines": [],
+                                    "date_io_lines": [],
+                                }
+                                inline = remainder.strip()
+                                if inline.startswith("@utils.transition"):
+                                    current_action["kind"] = "utility_transition"
+                                elif inline.startswith("@topic."):
+                                    current_action["kind"] = "delegation"
+                                continue
+
+                    if current_action is not None and indent > current_action["indent"]:
+                        if stripped.startswith("target:"):
+                            target = self._strip_quotes(stripped.split(":", 1)[1].strip())
+                            current_action["target"] = target
+                            current_action["target_line"] = i
+                            continue
+
+                        if stripped.startswith("available when"):
+                            current_action["has_available_when"] = True
+                            continue
+
+                        if stripped == "inputs:":
+                            current_io = {"name": "inputs", "indent": indent}
+                            current_io_field = None
+                            continue
+
+                        if stripped == "outputs:":
+                            current_io = {"name": "outputs", "indent": indent}
+                            current_io_field = None
+                            continue
+
+                        if current_io and indent > current_io["indent"]:
+                            if current_io_field is None or indent == current_io_field["indent"]:
+                                field_match = self.IO_FIELD_PATTERN.match(stripped)
+                                if field_match:
+                                    field_name, field_type = field_match.groups()
+                                    current_io_field = {
+                                        "name": field_name,
+                                        "type": field_type,
+                                        "indent": indent,
+                                        "section": current_io["name"],
+                                    }
+                                    current_action["io_fields"].append({
+                                        "name": field_name,
+                                        "type": field_type,
+                                        "section": current_io["name"],
+                                        "line": i,
+                                    })
+                                    if current_io["name"] in {"inputs", "outputs"} and field_type == "date":
+                                        current_action["date_io_lines"].append((i, field_name, current_io["name"]))
+                                    continue
+
+                            if current_io_field and indent > current_io_field["indent"]:
+                                if stripped.startswith("is_displayable:") and stripped.split(":", 1)[1].strip() == "True":
+                                    current_action["prompt_output_display_lines"].append((i, current_io_field["name"]))
+                                if stripped.startswith("is_required:") and stripped.split(":", 1)[1].strip() == "True":
+                                    current_action["required_input_lines"].append((i, current_io_field["name"]))
+                                continue
+
+                        if current_action["kind"] == "utility_transition":
+                            property_name = stripped.split(":", 1)[0].strip()
+                            if property_name in self.INVALID_TRANSITION_PROPERTIES:
+                                current_action["invalid_transition_properties"].append((i, property_name))
+                            continue
+
+        self._flush_action(current_action)
+
     def _check_mixed_indentation(self):
-        """Check for mixed tabs and spaces."""
         has_tabs = False
         has_spaces = False
         tab_line = None
         space_line = None
 
         for i, line in enumerate(self.lines, 1):
-            # Check leading whitespace
             leading = len(line) - len(line.lstrip())
             if leading > 0:
                 leading_chars = line[:leading]
-                if '\t' in leading_chars:
+                if "\t" in leading_chars:
                     has_tabs = True
                     if tab_line is None:
                         tab_line = i
-                if ' ' in leading_chars:
+                if " " in leading_chars:
                     has_spaces = True
                     if space_line is None:
                         space_line = i
 
         if has_tabs and has_spaces:
-            self.errors.append((
+            self._add_error(
                 tab_line or 1,
-                "error",
-                f"Mixed tabs and spaces detected. Tabs first seen on line {tab_line}, "
-                f"spaces first seen on line {space_line}. Use consistent indentation "
-                "(all tabs OR all spaces)."
-            ))
+                f"Mixed tabs and spaces detected. Tabs first seen on line {tab_line}, spaces first seen on line {space_line}. Use consistent indentation (all tabs OR all spaces).",
+            )
 
     def _check_boolean_case(self):
-        """Check for lowercase boolean values."""
-        # Pattern to match boolean assignments
-        bool_pattern = re.compile(r'=\s*(true|false)\s*(?:#|$)', re.IGNORECASE)
-
+        bool_pattern = re.compile(r"=\s*(true|false)\s*(?:#|$)", re.IGNORECASE)
         for i, line in enumerate(self.lines, 1):
             match = bool_pattern.search(line)
-            if match:
-                value = match.group(1)
-                if value.lower() == 'true' and value != 'True':
-                    self.errors.append((
-                        i,
-                        "error",
-                        f"Boolean must be capitalized: use 'True' instead of '{value}'"
-                    ))
-                elif value.lower() == 'false' and value != 'False':
-                    self.errors.append((
-                        i,
-                        "error",
-                        f"Boolean must be capitalized: use 'False' instead of '{value}'"
-                    ))
+            if not match:
+                continue
+            value = match.group(1)
+            if value.lower() == "true" and value != "True":
+                self._add_error(i, f"Boolean must be capitalized: use 'True' instead of '{value}'")
+            elif value.lower() == "false" and value != "False":
+                self._add_error(i, f"Boolean must be capitalized: use 'False' instead of '{value}'")
 
     def _check_required_blocks(self):
-        """Check for required blocks: system, config, topic, start_agent."""
         required = {
-            'system:': False,
-            'config:': False,
-            'topic ': False,  # topic followed by name
-            'start_agent ': False,  # start_agent followed by name
+            "system": False,
+            "config": False,
+            "topic": False,
+            "start_agent": False,
         }
-
         for line in self.lines:
             stripped = line.strip()
-            if stripped.startswith('system:'):
-                required['system:'] = True
-            elif stripped.startswith('config:'):
-                required['config:'] = True
-            elif stripped.startswith('topic '):
-                required['topic '] = True
-            elif stripped.startswith('start_agent '):
-                required['start_agent '] = True
+            if stripped.startswith("system:"):
+                required["system"] = True
+            elif stripped.startswith("config:"):
+                required["config"] = True
+            elif stripped.startswith("topic "):
+                required["topic"] = True
+            elif stripped.startswith("start_agent "):
+                required["start_agent"] = True
 
-        missing = [k.strip(':').strip() for k, v in required.items() if not v]
+        missing = [name for name, present in required.items() if not present]
         if missing:
-            self.errors.append((
+            self._add_error(
                 1,
-                "error",
-                f"Missing required blocks: {', '.join(missing)}. "
-                "Every agent needs system, config, at least one topic, and start_agent."
-            ))
+                f"Missing required blocks: {', '.join(missing)}. Every agent needs config, system, exactly one start_agent, and at least one topic.",
+            )
 
-    def _check_default_agent_user(self):
-        """Check if default_agent_user is present in config."""
-        in_config = False
-        has_default_agent_user = False
+    def _check_config_fields(self):
+        developer_name = self.config_fields.get("developer_name")
+        agent_description = self.config_fields.get("agent_description")
+        agent_type = self.config_fields.get("agent_type")
+        default_agent_user = self.config_fields.get("default_agent_user")
 
+        if not developer_name:
+            self._add_error(1, "Missing 'developer_name' in config block. This field is required.")
+        if not agent_description:
+            self._add_error(1, "Missing 'agent_description' in config block. This field is required.")
+        if not agent_type:
+            self._add_error(1, "Missing 'agent_type' in config block. Set it explicitly to 'AgentforceServiceAgent' or 'AgentforceEmployeeAgent'.")
+            return
+
+        agent_type_value, agent_type_line = agent_type
+        if agent_type_value not in {"AgentforceServiceAgent", "AgentforceEmployeeAgent"}:
+            self._add_error(
+                agent_type_line,
+                f"Invalid agent_type '{agent_type_value}'. Use 'AgentforceServiceAgent' or 'AgentforceEmployeeAgent'.",
+            )
+            return
+
+        if agent_type_value == "AgentforceServiceAgent" and not default_agent_user:
+            self._add_error(
+                agent_type_line,
+                "Service Agents require 'default_agent_user' in config. Set it to a valid Einstein Agent User.",
+            )
+
+        if agent_type_value == "AgentforceEmployeeAgent" and default_agent_user:
+            self._add_error(
+                default_agent_user[1],
+                "Employee Agents must NOT include 'default_agent_user'. Remove it entirely; Employee Agents run as the logged-in user.",
+            )
+
+    def _check_start_agent_count(self):
+        count = len(self.start_agent_names)
+        if count == 0:
+            self._add_error(1, "Missing start_agent block. Every agent needs exactly one start_agent.")
+        elif count > 1:
+            first_line = sorted(self.start_agent_names.values())[1]
+            self._add_error(first_line, f"Found {count} start_agent blocks. Exactly one start_agent is allowed.")
+
+    def _check_name_collisions(self):
+        for name, line in self.start_agent_names.items():
+            if name in self.topic_names:
+                self._add_error(
+                    line,
+                    f"Name collision: start_agent '{name}' has the same API name as a topic. Use unique names for start_agent and topic blocks.",
+                )
+
+    def _check_name_rules(self, name: str, line: int, kind: str):
+        if not self.NAME_PATTERN.match(name):
+            self._add_error(
+                line,
+                f"Invalid {kind} '{name}'. Names must start with a letter and contain only letters, numbers, and underscores (max 80 chars).",
+            )
+            return
+        if "__" in name:
+            self._add_error(line, f"Invalid {kind} '{name}'. Consecutive underscores are not allowed.")
+        if name.endswith("_"):
+            self._add_error(line, f"Invalid {kind} '{name}'. Names cannot end with an underscore.")
+
+    def _check_naming_rules(self):
+        if "developer_name" in self.config_fields:
+            name, line = self.config_fields["developer_name"]
+            self._check_name_rules(name, line, "developer_name")
+
+        for name, line in self.topic_names.items():
+            self._check_name_rules(name, line, "topic name")
+
+        for name, line in self.start_agent_names.items():
+            self._check_name_rules(name, line, "start_agent name")
+
+        for name, line in self.variable_names.items():
+            self._check_name_rules(name, line, "variable name")
+
+    def _check_invalid_connections_wrapper(self):
         for i, line in enumerate(self.lines, 1):
-            stripped = line.strip()
-
-            if stripped.startswith('config:'):
-                in_config = True
-                continue
-
-            # Check if we've left config block (another top-level block)
-            if in_config and stripped and not stripped.startswith('#'):
-                if re.match(r'^(system|variables|language|connections|topic|start_agent)\s*:', stripped):
-                    in_config = False
-
-            if in_config and 'default_agent_user' in stripped:
-                has_default_agent_user = True
-
-        if not has_default_agent_user:
-            self.errors.append((
-                1,
-                "error",
-                "Missing 'default_agent_user' in config block. This is REQUIRED. "
-                "Set it to a valid Einstein Agent User, e.g., default_agent_user: \"agent@yourorg.com\""
-            ))
+            if line.strip() == "connections:":
+                self._add_error(i, "Invalid top-level block 'connections:'. Use 'connection messaging:' (singular) instead.")
 
     def _check_mutable_linked_conflict(self):
-        """Check for variables declared as both mutable AND linked."""
-        pattern = re.compile(r'mutable\s+linked|linked\s+mutable', re.IGNORECASE)
-
+        pattern = re.compile(r"mutable\s+linked|linked\s+mutable", re.IGNORECASE)
         for i, line in enumerate(self.lines, 1):
             if pattern.search(line):
-                self.errors.append((
+                self._add_error(
                     i,
-                    "error",
-                    "Variable cannot be both 'mutable' AND 'linked'. "
-                    "Use 'mutable' for changeable state, 'linked' for external read-only data."
-                ))
+                    "Variable cannot be both 'mutable' AND 'linked'. Use 'mutable' for changeable state and 'linked' for external read-only data.",
+                )
+
+    def _check_reserved_variable_names(self):
+        for name, line in self.variable_names.items():
+            if name in self.RESERVED_VARIABLE_NAMES:
+                self._add_warning(
+                    line,
+                    f"Variable name '{name}' may conflict with platform context mappings. Prefer a prefixed name like 'customer_{name.lower()}'.",
+                )
 
     def _check_undefined_topics(self):
-        """Check for transitions to undefined topics."""
-        # Collect all defined topics
-        topic_pattern = re.compile(r'^(topic|start_agent)\s+(\w+):')
-        defined_topics = set()
-
-        for line in self.lines:
-            match = topic_pattern.match(line.strip())
-            if match:
-                defined_topics.add(match.group(2))
-
-        # Find all topic references
-        ref_pattern = re.compile(r'@topic\.(\w+)')
-
+        ref_pattern = re.compile(r"@topic\.([A-Za-z][A-Za-z0-9_]*)")
         for i, line in enumerate(self.lines, 1):
             for match in ref_pattern.finditer(line):
                 topic_name = match.group(1)
-                if topic_name not in defined_topics:
-                    self.warnings.append((
+                if topic_name not in self.defined_topics:
+                    self._add_warning(
                         i,
-                        "warning",
-                        f"Reference to undefined topic '@topic.{topic_name}'. "
-                        "Ensure this topic is defined in the agent script."
-                    ))
+                        f"Reference to undefined topic '@topic.{topic_name}'. Ensure this topic exists in the agent script.",
+                    )
+
+    def _check_multiline_descriptions(self):
+        for line, block_kind in self.multiline_description_issues:
+            self._add_warning(
+                line,
+                f"{block_kind} description appears multiline or block-scalar based. Keep topic/start_agent description on a single line; multiline descriptions are a known parser gotcha.",
+            )
+
+    def _check_lifecycle_instruction_wrappers(self):
+        for line, lifecycle_name in self.lifecycle_instruction_wrappers:
+            self._add_warning(
+                line,
+                f"{lifecycle_name} should contain direct content, not an 'instructions:' wrapper. Put procedural lines directly under {lifecycle_name}:.",
+            )
 
     def _check_post_action_position(self):
-        """Warn if post-action checks appear after LLM instructions."""
-        # This is a heuristic check - look for patterns that suggest
-        # post-action checks are at the bottom instead of the top
         in_instructions = False
         seen_pipe_text = False
-        instruction_start_line = None
 
         for i, line in enumerate(self.lines, 1):
             stripped = line.strip()
-
-            if 'instructions:' in stripped:
+            if "instructions:" in stripped:
                 in_instructions = True
-                instruction_start_line = i
                 seen_pipe_text = False
                 continue
 
             if in_instructions:
-                # Check if we've left instructions block
-                if stripped.startswith('actions:') or stripped.startswith('topic ') or stripped.startswith('start_agent '):
+                if stripped.startswith(("actions:", "topic ", "start_agent ", "before_reasoning:", "after_reasoning:")):
                     in_instructions = False
                     continue
-
-                # Look for pipe text (LLM instructions)
-                if stripped.startswith('|'):
+                if stripped.startswith("|"):
                     seen_pipe_text = True
+                if seen_pipe_text and stripped.startswith("if ") and "@variables." in stripped:
+                    if any(token in stripped for token in ["_status", "_done", "_complete", "_processed"]):
+                        self._add_warning(
+                            i,
+                            "Post-action check appears after LLM instructions. Consider moving it to the top of instructions so it triggers on topic re-entry after action completion.",
+                        )
 
-                # If we've seen pipe text and now see a post-action check pattern
-                if seen_pipe_text and '@variables.' in stripped:
-                    if any(x in stripped for x in ['_status', '_done', '_complete', '_processed']):
-                        if stripped.startswith('if '):
-                            self.warnings.append((
-                                i,
-                                "warning",
-                                "Post-action check appears AFTER LLM instructions. "
-                                "Consider moving this check to the TOP of instructions "
-                                "so it triggers on the topic loop after action completion."
-                            ))
+    def _check_empty_list_literals(self):
+        compare_pattern = re.compile(r"^\s*if\s+.*(?:==|!=)\s*\[\]\s*:?\s*(?:#.*)?$")
+        set_pattern = re.compile(r"^\s*set\s+.+?=\s*\[\]\s*(?:#.*)?$")
+        for i, line in enumerate(self.lines, 1):
+            if compare_pattern.search(line):
+                self._add_warning(i, "Empty list literal '[]' is not supported in expressions. Use len(@variables.list) == 0 instead.")
+            elif set_pattern.search(line):
+                self._add_warning(i, "Resetting with 'set ... = []' is a known parser gotcha. Use a temporary empty variable workaround instead.")
+
+    def _check_inputs_in_set(self):
+        pattern = re.compile(r"^\s*set\s+@variables\.[^=]+\s*=\s*@inputs\.")
+        for i, line in enumerate(self.lines, 1):
+            if pattern.search(line):
+                self._add_warning(i, "Using @inputs in set is a deploy-breaking anti-pattern. Capture input with @utils.setVariables or bind from @variables instead.")
+
+    def _check_bare_run_actions(self):
+        pattern = re.compile(r"^\s*run\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:#.*)?$")
+        for i, line in enumerate(self.lines, 1):
+            match = pattern.search(line)
+            if match:
+                self._add_warning(i, f"Bare action name '{match.group(1)}' in run. Use '@actions.{match.group(1)}' explicitly.")
+
+    def _check_action_metadata_context(self):
+        for action in self.action_definitions:
+            if action["kind"] != "utility_transition":
+                continue
+            for line, property_name in action["invalid_transition_properties"]:
+                self._add_warning(
+                    line,
+                    f"'{property_name}' is not valid on @utils.transition actions. Use it only on target-backed action definitions with 'target:'.",
+                )
+
+    def _check_prompt_output_displayability(self):
+        for action in self.action_definitions:
+            target = action.get("target") or ""
+            if not (target.startswith("prompt://") or target.startswith("generatePromptResponse://")):
+                continue
+            for line, field_name in action["prompt_output_display_lines"]:
+                self._add_warning(
+                    line,
+                    f"Output '{field_name}' uses 'is_displayable: True' on a prompt target. This can cause blank agent responses; prefer 'is_displayable: False' with 'is_used_by_planner: True'.",
+                )
+
+    def _check_date_type_in_action_io(self):
+        for action in self.action_definitions:
+            for line, field_name, section in action["date_io_lines"]:
+                self._add_warning(
+                    line,
+                    f"Field '{field_name}' uses 'date' in action {section}. Runtime support is unreliable; prefer 'object' with complex_data_type_name: \"lightning__dateType\" for action I/O.",
+                )
+
+    def _check_is_required_advisories(self):
+        for action in self.action_definitions:
+            if action["has_available_when"]:
+                continue
+            for line, field_name in action["required_input_lines"]:
+                self._add_warning(
+                    line,
+                    f"Input '{field_name}' uses 'is_required: True', but that is only a planner hint. Add an 'available when' guard if this input must gate execution.",
+                )
+
+    def _check_employee_agent_gotchas(self):
+        agent_type = self.config_fields.get("agent_type", (None, None))[0]
+        if agent_type != "AgentforceEmployeeAgent":
+            return
+
+        for line in self.connection_messaging_lines:
+            self._add_warning(
+                line,
+                "Employee Agents typically should not include 'connection messaging:'. That block is generally for Service Agents / Messaging flows.",
+            )
+
+        for line in self.messaging_linked_var_lines:
+            self._add_warning(
+                line,
+                "Messaging-linked variables are usually unnecessary for Employee Agents and may cause configuration issues if Messaging is not set up.",
+            )
 
 
 def format_output(result: dict) -> str:
@@ -249,10 +667,9 @@ def format_output(result: dict) -> str:
     file_name = Path(result["file_path"]).name
 
     if result["success"] and not result["warnings"]:
-        # Show success message
-        lines.append(f"✅ Agent Script LSP Validation Passed: {file_name}")
-        lines.append("   • Syntax check: OK")
-        lines.append("   • Required blocks: OK")
+        lines.append(f"✅ Agent Script Validation Passed: {file_name}")
+        lines.append("   • Core syntax checks: OK")
+        lines.append("   • Config semantics: OK")
         lines.append("   • Topic references: OK")
         return "\n".join(lines)
 
@@ -277,37 +694,30 @@ def format_output(result: dict) -> str:
 
 def main():
     """Main hook entry point."""
-    # Read hook input from stdin
     try:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError:
         sys.exit(0)
 
-    # Extract file path
     tool_input = hook_input.get("tool_input", {})
     file_path = tool_input.get("file_path", "")
 
-    # Only validate .agent files
     if not file_path.endswith(".agent"):
         sys.exit(0)
 
-    # Check if file exists
     if not os.path.exists(file_path):
         sys.exit(0)
 
-    # Read file content
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
     except Exception as e:
         print(f"⚠️ Could not read {file_path}: {e}")
         sys.exit(0)
 
-    # Validate
     validator = AgentScriptValidator(content, file_path)
     result = validator.validate()
 
-    # Output results
     output = format_output(result)
     if output:
         print(output)
