@@ -409,7 +409,7 @@ sf agent activate --api-name [AgentName] --target-org target-org
 | `sf agent validate authoring-bundle --api-name X --json` | Validate Agent Script syntax |
 | `sf org open agent --api-name X` | Open in Agentforce Builder |
 | `sf org open authoring-bundle` | Open Agentforce Studio list view (v2.121.7+) |
-| `sf agent generate authoring-bundle --api-name X --target-org <alias> --json` | Generate authoring bundle scaffolding; prompts on duplicate — use `--force-overwrite` to skip (v2.125.1+) |
+| `sf agent generate authoring-bundle --name <Name> --api-name X --target-org <alias> --json` | Generate authoring bundle scaffolding; `--name` required with `--json` (v2.126.4+) — use `--force-overwrite` to overwrite existing (v2.125.1+) |
 | `sf agent generate template --agent-file <path> --agent-version <ver>` | Generate BotTemplate for ISV packaging (AppExchange) |
 | `sf project retrieve start --metadata Agent:X` | Retrieve agent + components |
 | `sf project deploy start --metadata Agent:X` | Deploy agent metadata |

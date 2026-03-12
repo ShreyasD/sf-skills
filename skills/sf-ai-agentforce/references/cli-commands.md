@@ -102,21 +102,23 @@ sf agent generate agent-spec --spec ./agent-spec.yaml
 
 ### sf agent generate authoring-bundle
 
-Generates an authoring bundle scaffolding from an existing agent in the org. When a bundle with the same name already exists locally, prompts with Yes/No/Cancel before overwriting (v2.125.1+).
+Generates an authoring bundle scaffolding from an existing agent in the org. When a bundle with the same name already exists locally, use `--force-overwrite` to overwrite without confirmation (v2.125.1+).
 
 ```bash
-sf agent generate authoring-bundle --api-name <AgentApiName> --target-org <alias> --json
+sf agent generate authoring-bundle --name <BundleName> --api-name <AgentApiName> --target-org <alias> --json
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--api-name` | No | API name of the agent to generate from |
-| `--name` | No | Name for the authoring bundle |
+| `--name` | Yes (required when `--json` is specified) | Name for the authoring bundle |
 | `--no-spec` | No | Generate without a spec file |
 | `--force-overwrite` | No | Skip the duplicate-detection prompt and overwrite without confirmation (v2.125.1+) |
 | `--authoring-bundle` | No | Path to authoring bundle directory |
 | `--target-org` | No | Alias or username of the target org |
 | `--json` | No | Return output as JSON |
+
+> **v2.126.4 change**: When `--json` is specified, `--name` is now **required**. Previously the CLI would still prompt interactively even with `--json`, which was incorrect for scripting/CI contexts. If you omit `--name` with `--json`, the command errors instead of prompting. Without `--json`, the command continues to prompt interactively for missing flags.
 
 ### sf agent generate template
 

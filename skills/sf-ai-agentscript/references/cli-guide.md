@@ -425,6 +425,8 @@ sf agent activate --api-name MyAgent -o TARGET_ORG
 
 The `--no-spec` flag skips requiring an agent spec YAML file and uses default Agent Script boilerplate:
 
+> **v2.126.4 change**: When `--json` is specified, `--name` is now **required**. The CLI no longer prompts interactively for missing flags in JSON mode — it errors instead. Always include `--name` when scripting with `--json`.
+
 ```bash
 # Scaffold a new authoring bundle without an agent spec
 sf agent generate authoring-bundle --no-spec --name "My Agent" -o TARGET_ORG --json
