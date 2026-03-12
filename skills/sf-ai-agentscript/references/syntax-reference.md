@@ -89,6 +89,7 @@ config:
 | `agent_description` | ✅ Yes | Agent's purpose description |
 | `agent_type` | ✅ Yes | `AgentforceServiceAgent` or `AgentforceEmployeeAgent` |
 | `default_agent_user` | ⚠️ **REQUIRED** | Must be valid Einstein Agent User |
+| `agent_label` | Optional | Display name for the agent in UI (defaults to `developer_name` if omitted) |
 
 > ⚠️ **Critical**: `default_agent_user` must exist in the org with the "Einstein Agent User" profile. Query: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`
 
@@ -119,6 +120,8 @@ variables:
 
 > 💡 Variables support a `label:` property for UI display names and multiline `description: |` using pipe syntax.
 
+> 💡 Variables also support a `visibility:` property with values `"Internal"` (default — hidden from end user, used by planner only) or `"External"` (visible to end user in the chat interface). Example: `visibility: "External"`
+
 #### Variable Types
 
 | Type | Description | Example |
@@ -143,6 +146,8 @@ variables:
 | `currency` | Money values (action I/O only) |
 
 > ⚠️ **Undocumented variable types**: `timestamp` and `currency` compile as variable types but are absent from official GA documentation. Prefer `date` for date/time variables and `number` for currency values. These types are reliable for action I/O.
+
+> ⚠️ **`date` type fails in action I/O**: Using `date` as an action input or output type compiles but causes a runtime error (`'Date'`). Use `object` with `complex_data_type_name: "lightning__dateType"` instead. The `date` type works correctly for mutable/linked variables — the issue is only in action I/O. See [known-issues.md](known-issues.md#issue-28) Issue 28.
 
 #### Variable Modifiers
 
@@ -334,6 +339,24 @@ actions:
     available when @variables.is_authorized == True
 ```
 
+### Action `source` Attribute
+
+Actions imported from the Agentforce Asset Library require a `source:` attribute that matches the asset library's API name:
+
+```yaml
+actions:
+   search_knowledge:
+      description: "Search the knowledge base"
+      source: "My_Knowledge_Asset"   # Must match asset library API name exactly
+      inputs:
+         query: string
+      outputs:
+         answer: string
+      target: "retriever://My_Knowledge_Base"
+```
+
+> ⚠️ If `source:` does not match the asset library API name exactly (case-sensitive), the action will fail at publish time with a reference resolution error.
+
 ### Action Metadata Properties
 
 Action definitions with `target:` support the following metadata properties. These are NOT valid on `@utils.transition` utility actions.
@@ -352,7 +375,7 @@ Action definitions with `target:` support the following metadata properties. The
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `is_required` | Boolean | Marks input as mandatory |
+| `is_required` | Boolean | Marks input as mandatory — ⚠️ NOT enforced by planner (Issue 26) |
 | `is_user_input` | Boolean | LLM extracts from conversation |
 | `label` | String | Display name |
 | `description` | String | LLM context |
@@ -447,7 +470,7 @@ topic main:
 **Key Rules:**
 - Content goes **directly** under the block (NO `instructions:` wrapper)
 - Reliable primitives: `set`, `if`/`else`, `transition to`
-- `run` has **inconsistent runtime behavior** in lifecycle blocks across bundle types — use it in `reasoning.actions:` or `instructions: ->` instead
+- `run` behavior: `run @actions.X` works in `before_reasoning:` for topic-level actions with `target:` — validated with `set @variables.X = @outputs.Y` to capture outputs. However, behavior is inconsistent across bundle types for other action kinds. Safest to use `run` in `reasoning.actions:` or `instructions: ->` for general cases.
 - `transition to` works in `after_reasoning:` blocks
 - If a topic transitions mid-execution, the original topic's `after_reasoning:` does NOT run
 - Both hooks are FREE (no credit cost) — use for data prep, logging, cleanup
@@ -510,8 +533,38 @@ topic main:
 | `@context.x` | Reference context data | `@context.userProfile` |
 | `@inputs.x` | Reference procedure input | `@inputs.account_number` ⚠️ Procedure context only — see Common Pitfalls |
 | `@system_variables.user_input` | Most recent user utterance | `@system_variables.user_input` |
+| `@knowledge.citations_url` | Knowledge citation URL config | `@knowledge.citations_url` |
+| `@knowledge.rag_feature_config_id` | RAG feature configuration ID | `@knowledge.rag_feature_config_id` |
+| `@knowledge.citations_enabled` | Whether citations are active | `@knowledge.citations_enabled` |
 
 > 💡 `@system_variables` is a separate namespace from `@variables`. The `user_input` system variable contains the customer's most recent utterance.
+
+#### Common Linked Variable Sources
+
+Linked variables commonly reference these external source patterns:
+
+| Source Pattern | Description | Example |
+|----------------|-------------|---------|
+| `@session.sessionID` | Current session identifier | Standard session context |
+| `@context.customerId` | Customer ID from context | Pre-authenticated context |
+| `@MessagingSession.{field}` | Messaging session fields | `@MessagingSession.MessagingEndUserId` |
+| `@MessagingEndUser.{field}` | Messaging end user fields | `@MessagingEndUser.Name`, `@MessagingEndUser.ContactId` |
+
+```yaml
+# Common Messaging channel linked variables
+variables:
+   session_key: linked string
+      source: @MessagingSession.MessagingSessionKey
+      description: "Unique messaging session key"
+   end_user_name: linked string
+      source: @MessagingEndUser.Name
+      description: "End user display name from messaging channel"
+   contact_id: linked string
+      source: @MessagingEndUser.ContactId
+      description: "Contact record ID linked to messaging end user"
+```
+
+> 💡 `@MessagingSession` and `@MessagingEndUser` sources are available when the agent is deployed on a Messaging channel (Enhanced Chat, In-App, Web Chat). They are NOT available in Agent Builder Preview or `sf agent preview`.
 
 ---
 
@@ -758,6 +811,8 @@ actions:
 | Bare action name (no prefix) | Action not found / ignored | Always use `@actions.action_name` in `run`, templates, and instruction text |
 | `run @actions.X` for utility | Action not found | `run @actions.X` resolves against topic-level `actions:` with `target:` — use `@utils.setVariables` directly, not via `run` |
 | Null check vs empty string | Wrong comparison for null | Use `is None` for null checks, `== ""` for empty strings — they are different |
+| `is_required` not enforced | Planner invokes action without required inputs | Use `available when @variables.X is not None` guard instead. `is_required` is a hint, not a gate. See Issue 26 |
+| `date` type in action I/O | Runtime error `'Date'` | Use `object` + `complex_data_type_name: "lightning__dateType"` in action I/O. `date` works fine for variables. See Issue 28 |
 
 ### `@inputs` in `set` — Deploy-Breaking Anti-Pattern
 
@@ -819,3 +874,16 @@ reasoning:
       set_user_name: @utils.setVariables
          with user_name=...
 ```
+
+---
+
+## Upcoming: Naming Changes (Forward-Looking)
+
+> **Roadmap signal**: Salesforce is moving toward renaming core Agent Script concepts. Both old and new names will be supported during a transition period, with the old names deprecated later.
+
+| Current Name | New Name | Notes |
+|-------------|----------|-------|
+| `topic` | `subagent` | Reflects the delegation/supervision model |
+| `action` | `tool` | Aligns with industry-standard LLM terminology |
+
+**No action required now** — current `topic:` and `actions:` syntax continues to work. This is informational for forward planning.

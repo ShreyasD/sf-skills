@@ -179,6 +179,47 @@ topic escalation:
 
 **When to Use**: Failed verification, complex issues, customer request
 
+#### Escalation with Availability Check
+
+> **Production-validated issue**: When `@utils.escalate` is invoked but no human agents are available, the conversation re-enters the topic and triggers the escalation logic again — creating an infinite loop. The built-in 3-4 loop guardrail eventually breaks the cycle, but the user experience is poor (repeated "Connecting you..." messages).
+
+**Fix**: Use a latch variable to detect re-entry after a failed escalation, and route to a fallback topic.
+
+```yaml
+variables:
+   escalation_attempted: mutable boolean = False
+
+topic escalation:
+   description: "Escalate to human agent"
+
+   before_reasoning:
+      if @variables.escalation_attempted == True:
+         # Already attempted — agents unavailable, go to fallback
+         transition to @topic.leave_message
+
+      set @variables.escalation_attempted = True
+
+   reasoning:
+      instructions: ->
+         | I'm connecting you with a support specialist now.
+      actions:
+         handoff: @utils.escalate
+            description: "Transfer to human agent"
+
+topic leave_message:
+   description: "Collect contact info when agents are unavailable"
+   reasoning:
+      instructions: |
+         Our team is currently unavailable. Please leave your name
+         and a brief description of your issue, and we'll follow up.
+```
+
+**Key Points:**
+- `@utils.escalate` does NOT return a success/failure status — you cannot check if escalation succeeded
+- Use `before_reasoning:` (FREE, deterministic) to detect re-entry before the LLM runs
+- Always provide a fallback topic (leave message, callback request, self-service) for graceful degradation
+- See [known-issues.md](known-issues.md#issue-31) Issue 31 for full details
+
 ---
 
 ## Architecture Patterns

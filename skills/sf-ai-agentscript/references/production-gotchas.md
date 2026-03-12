@@ -323,6 +323,43 @@ if @variables.verified == "true":                     # Deterministic!
 
 ---
 
+## Escalation Fallback Loop
+
+> **Production impact**: Agent enters infinite escalation loop when no human agents are available — user sees repeated "Connecting you..." messages until the 3-4 loop guardrail kicks in.
+
+**The Problem**: `@utils.escalate` does not return a success/failure status. When no human agents are available (outside business hours, no Omni-Channel agents online), the escalation silently fails and the conversation re-enters the escalation topic, triggering the same logic again.
+
+**Fix**: Use a latch variable in `before_reasoning:` to detect re-entry and route to a fallback:
+
+```yaml
+variables:
+   escalation_attempted: mutable boolean = False
+
+topic escalation:
+   description: "Escalate to human agent"
+
+   before_reasoning:
+      if @variables.escalation_attempted == True:
+         transition to @topic.leave_message
+      set @variables.escalation_attempted = True
+
+   reasoning:
+      instructions: ->
+         | Let me connect you with a support specialist.
+      actions:
+         handoff: @utils.escalate
+            description: "Transfer to human agent"
+```
+
+**Key Points:**
+- The `before_reasoning:` check is FREE (no credit cost) and runs deterministically before the LLM
+- Always provide a graceful fallback topic (leave message, callback, self-service links)
+- This pattern also prevents credit waste — each failed escalation loop costs LLM reasoning credits
+
+> **Cross-reference**: See [known-issues.md](known-issues.md#issue-31) Issue 31. See [fsm-architecture.md](fsm-architecture.md) § Pattern 5 — Escalation with Availability Check.
+
+---
+
 ## Language Block Quirks
 
 - Hebrew and Indonesian appear **twice** in the language dropdown

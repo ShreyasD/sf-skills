@@ -224,6 +224,7 @@
 - **Root Cause**: The server-side compiler needs output type contracts to resolve `flow://` and `apex://` action targets. Without an `outputs:` block, the compiler cannot generate return bindings. The `inputs:` block alone is NOT sufficient — `outputs:` is specifically required.
 - **Workaround**: Always include an `outputs:` block in action definitions. The `inputs:` block can be omitted if the target has no required inputs (the LLM will still slot-fill via `with param=...`), but `outputs:` must always be present.
 - **TDD Validation**: `Val_No_Outputs` (v2.1.0) confirms inputs-only action definition → "Internal Error". `Val_Partial_Output` confirms declaring a subset of outputs IS valid. `Val_Apex_Bare_Output` confirms bare `@InvocableMethod` without wrapper classes also triggers this error.
+- **Cross-reference**: See also Issue 27 — a related but distinct error occurs when action I/O is present but doesn't match ALL invocable target parameters.
 - **Open Questions**: Will the compiler be updated to infer I/O schemas from the target's metadata?
 
 ---
@@ -380,6 +381,152 @@
 
 ---
 
+### Issue 26: `is_required: True` is a no-op for the planner
+- **Status**: OPEN
+- **Date Discovered**: 2026-03-11
+- **Affects**: Action input definitions with `is_required: True`
+- **Symptom**: Actions are invoked by the planner with empty or missing values for inputs marked `is_required: True`. The planner does not enforce the required constraint — it treats it as a hint, not a hard gate. Users expect the planner to refuse invocation until all required inputs are filled, but it proceeds regardless.
+- **Root Cause**: The `is_required` property compiles and is stored in the GenAiFunction metadata, but the planner does not validate required inputs before action invocation. The property only influences LLM slot-filling behavior (the LLM _tries_ to collect the value but is not blocked from proceeding without it).
+- **Workaround**: Use `available when` guards to enforce required inputs deterministically:
+  ```yaml
+  # ❌ INSUFFICIENT — planner ignores is_required
+  inputs:
+     order_id: string
+        is_required: True
+
+  # ✅ CORRECT — deterministic enforcement
+  reasoning:
+     actions:
+        lookup: @actions.get_order
+           available when @variables.order_id is not None
+  ```
+- **Open Questions**: Will the planner enforce `is_required` in a future release?
+- **Cross-reference**: See syntax-reference.md § Action Metadata Properties, Common Pitfalls.
+
+---
+
+### Issue 27: ConcurrentModificationException when action I/O doesn't match invocable target
+- **Status**: WORKAROUND (fix expected in 260.4)
+- **Date Discovered**: 2026-03-11
+- **Affects**: Action definitions with `inputs:` / `outputs:` blocks where the I/O schema does not declare ALL parameters on the invocable target
+- **Symptom**: `sf agent publish authoring-bundle` fails with `ConcurrentModificationException` or "Internal Error" when the action definition's I/O schema is a subset of the target's invocable parameters. For example, if a Flow has 5 inputs but the action only declares 3, the server-side compiler throws an internal error.
+- **Root Cause**: The compiler iterates over target parameters and agent I/O simultaneously. When the agent-side schema omits parameters that exist on the target, the iterator state becomes inconsistent, causing a `ConcurrentModificationException`.
+- **Workaround**: Declare ALL inputs and outputs from the invocable target in the action definition, even parameters the agent doesn't use. Unused inputs can be given a default or left for the LLM to fill. Unused outputs can be marked `filter_from_agent: True`.
+  ```yaml
+  # ❌ WRONG — subset of target params causes ConcurrentModificationException
+  inputs:
+     customer_id: string
+  # (target also has order_type, priority — not declared)
+
+  # ✅ CORRECT — declare all target params
+  inputs:
+     customer_id: string
+     order_type: string
+        description: "Type of order"
+     priority: string
+        description: "Priority level"
+  ```
+- **Open Questions**: Fix expected in release 260.4. Will partial I/O schemas be supported?
+- **Cross-reference**: Related to Issue 15 (missing outputs block). Issue 15 covers the case where `outputs:` is absent entirely; this issue covers the case where I/O is present but incomplete.
+
+---
+
+### Issue 28: `date` primitive type in action I/O causes runtime error
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-11
+- **Affects**: Action input/output definitions using `date` as the type
+- **Symptom**: Actions with `date` typed inputs or outputs compile and publish without error, but fail at runtime with `'Date'` type error when the action is invoked. The LLM-provided value cannot be coerced into the platform's expected Date format.
+- **Root Cause**: The `date` primitive in Agent Script compiles to a type that the action invocation runtime does not handle correctly. The runtime expects a specific ISO-8601 format that the LLM's slot-filled value does not match.
+- **Workaround**: Use `object` type with `complex_data_type_name` referencing the Lightning date type:
+  ```yaml
+  # ❌ WRONG — causes runtime error 'Date'
+  inputs:
+     appointment_date: date
+
+  # ✅ CORRECT — use object + Lightning type mapping
+  inputs:
+     appointment_date: object
+        complex_data_type_name: "lightning__dateType"
+  ```
+- **Open Questions**: Will the `date` primitive be fixed to work in action I/O?
+- **Cross-reference**: See syntax-reference.md § Variable Types, complex-data-types.md.
+
+---
+
+### Issue 29: ANTLR parser error for large/complex .agent files
+- **Status**: OPEN
+- **Date Discovered**: 2026-03-11
+- **Affects**: Large `.agent` files (approximately 1,664+ lines observed)
+- **Symptom**: The Agent Script parser (ANTLR-based) fails with a parser error when processing very large or highly complex `.agent` files. The error is non-specific and occurs during the parsing phase before any semantic validation.
+- **Root Cause**: The ANTLR parser has practical limits on grammar complexity and token count. Very large agents with many topics, deep nesting, or extensive instruction blocks can exceed these limits.
+- **Workaround**: None confirmed. Potential mitigations:
+  1. Reduce agent size by simplifying instructions (move verbose prompts into Prompt Templates)
+  2. Reduce topic count by consolidating related topics
+  3. Use topic delegation (`@topic.X`) to split into multiple smaller agents
+- **Open Questions**: What is the exact line/token limit? Will the parser be updated to handle larger files?
+
+---
+
+### Issue 30: 500 "Failed to create planner session" (widespread, multi-version)
+- **Status**: OPEN
+- **Date Discovered**: 2026-03-11
+- **Affects**: Agent runtime — all agent types and versions
+- **Symptom**: Agent returns HTTP 500 with "Failed to create planner session" when a user initiates a conversation. Error is intermittent and affects multiple orgs across different Salesforce releases. Not correlated with agent complexity, user permissions, or time of day.
+- **Root Cause**: Unknown. The error originates in the planner session initialization layer. Suspected to be a transient infrastructure issue on the Einstein Platform side.
+- **Workaround**: None reliable. Retry after a few minutes. If persistent:
+  1. Deactivate and reactivate the agent
+  2. Re-publish the authoring bundle (creates a new BotVersion)
+  3. Contact Salesforce support with the session ID and timestamp
+- **Open Questions**: Is this a known infrastructure issue with an ETA for fix?
+
+---
+
+### Issue 31: Escalation loops when no human agents available
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-11
+- **Affects**: `@utils.escalate` action in agents deployed without live human agents
+- **Symptom**: When `@utils.escalate` is invoked but no human agents are available (e.g., outside business hours, no Omni-Channel agents online), the escalation fails silently and the conversation re-enters the same topic. This triggers the escalation logic again, creating an infinite loop. The built-in 3-4 loop guardrail eventually breaks the cycle, but the user receives confusing repeated messages.
+- **Root Cause**: `@utils.escalate` does not return a success/failure status. There is no built-in mechanism to detect whether human agents are available before attempting escalation, and no way to handle a failed escalation gracefully.
+- **Workaround**: Check agent availability before escalating, and provide a fallback path:
+  ```yaml
+  variables:
+     escalation_attempted: mutable boolean = False
+
+  topic escalation:
+     description: "Escalate to human agent"
+     reasoning:
+        instructions: ->
+           if @variables.escalation_attempted == True:
+              | I'm sorry, but our team is currently unavailable.
+              | Please try again during business hours or leave a message.
+              transition to @topic.leave_message
+           | Let me connect you with a support specialist.
+        actions:
+           handoff: @utils.escalate
+              description: "Transfer to human agent"
+
+     before_reasoning:
+        if @variables.escalation_attempted == True:
+           # Already tried — don't loop
+           transition to @topic.leave_message
+        set @variables.escalation_attempted = True
+  ```
+- **Open Questions**: Will `@utils.escalate` return a status code in a future release? Will a built-in availability check action be added?
+- **Cross-reference**: See fsm-architecture.md § Pattern 5 (HANDOFF) — Escalation with Availability Check sub-pattern. See production-gotchas.md § Escalation Fallback Loop.
+
+---
+
+### Issue 32: Citations not rendering in NGA agents vs legacy agents
+- **Status**: OPEN
+- **Date Discovered**: 2026-03-11
+- **Affects**: Next-Generation Agent (NGA / Agent Script) agents using knowledge bases with citations enabled
+- **Symptom**: Despite enabling all citation settings (`citations_enabled: True`, `citations_url` configured, knowledge base attached), citations do not render in agent responses for NGA agents. The same knowledge base with citations works correctly in legacy Einstein Bot agents.
+- **Root Cause**: The citation rendering pipeline is not fully implemented for the NGA/Agent Script agent runtime. Legacy agents use a different response rendering path that supports citation markup.
+- **Workaround**: None for NGA agents. If citations are critical, use a legacy agent for knowledge-intensive topics, or include source URLs directly in the knowledge article content so they appear in the response text.
+- **Open Questions**: Will citation rendering be added to the NGA runtime? Is there a timeline?
+
+---
+
 ## Resolved Issues
 
 ### Issue 16: `connections:` (plural) wrapper block not valid — use `connection messaging:` (singular)
@@ -415,4 +562,4 @@ When an issue is resolved:
 
 ---
 
-*Last updated: 2026-03-11*
+*Last updated: 2026-03-11 (v2.6.0)*
