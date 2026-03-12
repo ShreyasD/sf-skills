@@ -379,6 +379,16 @@ config:
 sf agent publish authoring-bundle --api-name Employee_Agent -o TARGET_ORG --json
 ```
 
+### Common Mistakes with Employee Agents
+
+| Mistake | Symptom | Fix |
+|---------|---------|-----|
+| Including `default_agent_user` | HTTP 500 on publish | Remove the field entirely |
+| Omitting `agent_type` | Defaults to Service Agent, then fails if no agent user | Set `agent_type: "AgentforceEmployeeAgent"` explicitly |
+| Including Messaging-linked variables | Unnecessary bloat, may cause errors if Messaging not configured | Remove `EndUserId`, `RoutableId`, `ContactId` linked vars |
+| Including `connection messaging:` block | Service Agent only -- causes errors for Employee Agent | Remove the entire connection block |
+| Including `language:` block | Not required for Employee agents | Optional -- remove to keep minimal |
+
 ---
 
 ## Auto-Generated Permission Set Warning

@@ -1,7 +1,8 @@
-# Hello World Agent
-# The minimal viable Agentforce agent - start here!
+# Hello World Service Agent
+# The minimal viable Agentforce Service Agent - start here!
+# For Employee Agent (no dedicated user), see hello-world-employee.agent
 #
-# This template shows the absolute minimum structure required for a working agent.
+# This template shows the absolute minimum structure required for a working Service Agent.
 # Use this as your starting point when learning Agent Script.
 #
 # ★ Why This Structure?
@@ -27,6 +28,7 @@ system:
 
 config:
 	agent_name: "Hello_World_Agent"
+	agent_type: "AgentforceServiceAgent"
 	default_agent_user: "your.user@company.com"
 	agent_label: "Hello World Agent"
 	description: "A minimal example agent to learn Agent Script basics"

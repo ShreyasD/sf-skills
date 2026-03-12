@@ -140,13 +140,22 @@ topic:         # 8. Required: Conversation topics (one or more)
 | *(missing)* | `agent_type` | **Required**: `AgentforceServiceAgent` or `AgentforceEmployeeAgent`. Determines the entire permission model — see [references/agent-user-setup.md](references/agent-user-setup.md) |
 
 ```yaml
-# ✅ CORRECT config block:
+# ✅ CORRECT: Service Agent config
 config:
-  developer_name: "my_agent"
+  developer_name: "my_service_agent"
   agent_description: "Handles customer support inquiries"
   agent_type: "AgentforceServiceAgent"
-  default_agent_user: "agent_user@00dxx000001234.ext"  # Service agents ONLY — omit for Employee agents
+  default_agent_user: "agent_user@00dxx000001234.ext"
+
+# ✅ CORRECT: Employee Agent config (simpler -- no dedicated user)
+config:
+  developer_name: "my_employee_agent"
+  agent_description: "Internal assistant for employees"
+  agent_type: "AgentforceEmployeeAgent"
+  # NO default_agent_user -- agent runs as logged-in employee
 ```
+
+> **Omitting `agent_type` defaults to Service Agent behavior.** If you also omit `default_agent_user`, publish will fail with HTTP 500. Always set `agent_type` explicitly.
 
 ### Naming Rules
 - Only letters, numbers, underscores. Must begin with a letter.
@@ -360,7 +369,7 @@ These execute as **code**, not suggestions. The LLM cannot override them.
 | `sf agent preview` hangs | Ran interactive mode | Use subcommands `start`/`send`/`end` with `--json` |
 | Linked variables empty in preview | Context vars not injected | `sf agent preview` can't inject `@context`/`@session` — use Runtime API |
 
-> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 22 platform bugs and workarounds.
+> **Full issue catalog**: See [references/known-issues.md](references/known-issues.md) for 24 platform bugs and workarounds.
 
 ### Verification Protocol
 
@@ -437,7 +446,7 @@ sf data query -q "SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent
 | Category | Directory | Contents |
 |----------|-----------|----------|
 | Root templates | [assets/](assets/) | 7 .agent templates (minimal-starter, hub-and-spoke, etc.) |
-| Complete agents | [assets/agents/](assets/agents/) | 4 full agent examples |
+| Complete agents | [assets/agents/](assets/agents/) | 5 full agent examples (4 Service + 1 Employee) |
 | Components | [assets/components/](assets/components/) | 6 component fragments |
 | Advanced patterns | [assets/patterns/](assets/patterns/) | 11 pattern templates |
 | Metadata XML | [assets/metadata/](assets/metadata/) | 6 XML templates |

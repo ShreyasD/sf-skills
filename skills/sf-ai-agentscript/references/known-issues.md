@@ -348,6 +348,28 @@
 
 ---
 
+### Issue 23: HTTP 500 on publish when `default_agent_user` is set for Employee Agent
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-11
+- **Affects**: `sf agent publish authoring-bundle`
+- **Symptom**: Publish fails with generic HTTP 500 error (no detailed message). Occurs when `default_agent_user` is included in the config block for an `AgentforceEmployeeAgent`, or when `default_agent_user` references a non-existent user for a Service Agent.
+- **Root Cause**: The Einstein Platform tries to resolve the `default_agent_user` reference during publish. For Employee Agents, this field is invalid entirely. For Service Agents, if the user doesn't exist or lacks the Einstein Agent User profile, the API returns 500 instead of a descriptive error.
+- **Workaround**: For Employee Agents, remove `default_agent_user` entirely and set `agent_type: "AgentforceEmployeeAgent"`. For Service Agents, verify the user exists: `SELECT Username FROM User WHERE Profile.Name = 'Einstein Agent User' AND IsActive = true`
+- **Open Questions**: Will the API return a descriptive error instead of 500?
+
+---
+
+### Issue 24: Omitting `agent_type` silently defaults to Service Agent behavior
+- **Status**: WORKAROUND
+- **Date Discovered**: 2026-03-11
+- **Affects**: Agent config block
+- **Symptom**: Agent without explicit `agent_type` behaves as Service Agent. If `default_agent_user` is also missing, publish fails with HTTP 500. No warning or error is emitted about the missing field.
+- **Root Cause**: The compiler defaults to `EinsteinServiceAgent` internally when `agent_type` is not specified.
+- **Workaround**: Always set `agent_type` explicitly to `"AgentforceServiceAgent"` or `"AgentforceEmployeeAgent"`.
+- **Open Questions**: Will the compiler emit a warning when `agent_type` is omitted?
+
+---
+
 ## Resolved Issues
 
 ### Issue 16: `connections:` (plural) wrapper block not valid — use `connection messaging:` (singular)

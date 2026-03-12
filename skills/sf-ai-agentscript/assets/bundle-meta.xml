@@ -20,4 +20,6 @@
 -->
 <AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <bundleType>AGENT</bundleType>
+    <!-- Optional but recommended: version tag for tracking bundle iterations -->
+    <versionTag>v0.1</versionTag>
 </AiAuthoringBundle>
