@@ -15,201 +15,131 @@ metadata:
 
 # sf-soql: Salesforce SOQL Query Expert
 
-Expert database engineer specializing in Salesforce Object Query Language (SOQL). Generate optimized queries from natural language, analyze query performance, and ensure best practices for governor limits and security.
+Use this skill when the user needs **SOQL/SOSL authoring or optimization**: natural-language-to-query generation, relationship queries, aggregates, query-plan analysis, and performance/safety improvements for Salesforce queries.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Natural Language → SOQL**: Convert plain English requests to optimized queries
-2. **Query Optimization**: Analyze and improve query performance
-3. **Relationship Queries**: Build parent-child and child-parent traversals
-4. **Aggregate Functions**: COUNT, SUM, AVG, MIN, MAX with GROUP BY
-5. **Security Enforcement**: Ensure FLS and sharing rules compliance
-6. **Governor Limit Awareness**: Design queries within limits
+Use `sf-soql` when the work involves:
+- `.soql` files
+- query generation from natural language
+- relationship queries and aggregate queries
+- query optimization and selectivity analysis
+- SOQL/SOSL syntax and governor-aware design
 
-## Workflow (4-Phase Pattern)
-
-### Phase 1: Requirements Gathering
-
-**Ask the user** to gather:
-- What data is needed (objects, fields)
-- Filter criteria (WHERE conditions)
-- Sort requirements (ORDER BY)
-- Record limit requirements
-- Use case (display, processing, reporting)
-
-### Phase 2: Query Generation
-
-**Natural Language Examples**:
-
-| Request | Generated SOQL |
-|---------|----------------|
-| "Get all active accounts with their contacts" | `SELECT Id, Name, (SELECT Id, Name FROM Contacts) FROM Account WHERE IsActive__c = true` |
-| "Find contacts created this month" | `SELECT Id, Name, Email FROM Contact WHERE CreatedDate = THIS_MONTH` |
-| "Count opportunities by stage" | `SELECT StageName, COUNT(Id) FROM Opportunity GROUP BY StageName` |
-| "Get accounts with revenue over 1M sorted by name" | `SELECT Id, Name, AnnualRevenue FROM Account WHERE AnnualRevenue > 1000000 ORDER BY Name` |
-
-### Phase 3: Optimization
-
-**Query Optimization Checklist**:
-
-1. **Selectivity**: Does WHERE clause use indexed fields?
-2. **Field Selection**: Only query needed fields (not SELECT *)
-3. **Limit**: Is LIMIT appropriate for use case?
-4. **Relationship Depth**: Avoid deep traversals (max 5 levels)
-5. **Aggregate Queries**: Use for counts instead of loading all records
-
-### Phase 4: Validation & Execution
-
-```bash
-# Test query
-sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org --json
-
-# Analyze query plan (uses REST API explain endpoint)
-sf api request rest "/query/?explain=SELECT+Id,Name+FROM+Account+WHERE+Industry='Technology'" --target-org my-org --json
-```
+Delegate elsewhere when the user is:
+- performing bulk data operations → [sf-data](../sf-data/SKILL.md)
+- embedding query logic inside broader Apex implementation → [sf-apex](../sf-apex/SKILL.md)
+- debugging via logs rather than query shape → [sf-debug](../sf-debug/SKILL.md)
 
 ---
 
-## Best Practices (100-Point Scoring)
+## Required Context to Gather First
 
-| Category | Points | Key Rules |
-|----------|--------|-----------|
-| **Selectivity** | 25 | Indexed fields in WHERE, selective filters |
-| **Performance** | 25 | Appropriate LIMIT, minimal fields, no unnecessary joins |
-| **Security** | 20 | WITH SECURITY_ENFORCED or stripInaccessible |
-| **Correctness** | 15 | Proper syntax, valid field references |
-| **Readability** | 15 | Formatted, meaningful aliases, comments |
-
-**Scoring Thresholds**: 90-100 = Production-optimized, 80-89 = Good (minor optimizations possible), 70-79 = Performance concerns, <70 = Needs improvement.
+Ask for or infer:
+- target object(s)
+- fields needed
+- filter criteria
+- sort / limit requirements
+- whether the query is for display, automation, reporting-like analysis, or Apex usage
+- whether performance / selectivity is already a concern
 
 ---
 
-## Quick Reference
+## Recommended Workflow
 
-### Security (Always Apply)
+### 1. Generate the simplest correct query
+Prefer:
+- only needed fields
+- clear WHERE criteria
+- reasonable LIMIT when appropriate
+- relationship depth only as deep as necessary
 
-```sql
--- Enforce FLS (throws exception on inaccessible fields)
-SELECT Id, Name, Phone FROM Account WITH SECURITY_ENFORCED
+### 2. Choose the right query shape
+| Need | Default pattern |
+|---|---|
+| parent data from child | child-to-parent traversal |
+| child rows from parent | subquery |
+| counts / rollups | aggregate query |
+| records with / without related rows | semi-join / anti-join |
+| text search across objects | SOSL |
 
--- Respect sharing rules
-SELECT Id, Name FROM Account WITH USER_MODE
-```
+### 3. Optimize for selectivity and safety
+Check:
+- indexed / selective filters
+- no unnecessary fields
+- no avoidable wildcard or scan-heavy patterns
+- security enforcement expectations
 
-> See [references/query-optimization.md](references/query-optimization.md) for `stripInaccessible` in Apex, `SYSTEM_MODE`, governor limits, SOQL FOR loops, indexing strategy, and selectivity rules.
-
-### Governor Limits (Key Numbers)
-
-| Limit | Synchronous | Asynchronous |
-|-------|-------------|--------------|
-| Total SOQL Queries | 100 | 200 |
-| Records Retrieved | 50,000 | 50,000 |
-
-> **Anti-pattern**: Never query inside a loop. Use `Map<Id, SObject>` with `WHERE Id IN :idSet` instead.
-
----
-
-## SOQL Syntax, Relationships & Aggregates
-
-> See [references/soql-syntax-reference.md](references/soql-syntax-reference.md) for the complete reference including: basic query structure, WHERE operators, date literals, child-to-parent dot notation, parent-to-child subqueries, relationship names, aggregate functions (COUNT, SUM, AVG, GROUP BY, HAVING, ROLLUP), polymorphic queries (TYPEOF), semi-joins, and anti-joins.
-
-**Key patterns:**
-- **Child-to-Parent**: `SELECT Contact.Account.Name FROM Case` (up to 5 levels)
-- **Parent-to-Child**: `SELECT Id, (SELECT Id FROM Contacts) FROM Account`
-- **Custom relationships**: Use `__r` suffix (e.g., `Custom_Object__r.Name`)
-- **Aggregates**: `SELECT Industry, COUNT(Id) FROM Account GROUP BY Industry HAVING COUNT(Id) > 10`
-
-## Query Optimization
-
-> See [references/query-optimization.md](references/query-optimization.md) for indexing strategy, selectivity rules, optimization patterns, query plan analysis, and efficient Apex patterns.
-
-**Key rules:**
-- Use indexed fields in WHERE (Id, Name, CreatedDate, Email, External IDs)
-- Trailing wildcards use indexes (`LIKE 'Acme%'`), leading wildcards don't (`LIKE '%corp'`)
-- Filter in SOQL, not in Apex — use `LIMIT` appropriate to use case
-- Use `sf api request rest '/query/?explain=<SOQL>'` to analyze query cost
+### 4. Validate execution path if needed
+If the user wants runtime verification, hand off execution to:
+- [sf-data](../sf-data/SKILL.md)
 
 ---
 
-## Natural Language Examples
+## High-Signal Rules
 
-| Request | SOQL |
-|---------|------|
-| "Get me all accounts" | `SELECT Id, Name FROM Account LIMIT 1000` |
-| "Find contacts without email" | `SELECT Id, Name FROM Contact WHERE Email = null` |
-| "Top 10 opportunities by amount" | `SELECT Id, Name, Amount FROM Opportunity ORDER BY Amount DESC LIMIT 10` |
-| "Contacts with @gmail emails" | `SELECT Id, Name, Email FROM Contact WHERE Email LIKE '%@gmail.com'` |
-| "Opportunities closing this quarter" | `SELECT Id, Name, CloseDate FROM Opportunity WHERE CloseDate = THIS_QUARTER` |
-| "Total revenue by industry" | `SELECT Industry, SUM(AnnualRevenue) FROM Account GROUP BY Industry` |
+- never use `SELECT *` style thinking; query only required fields
+- do not query inside loops in Apex contexts
+- prefer filtering in SOQL rather than post-filtering in Apex
+- use aggregates for counts and grouped summaries instead of loading unnecessary records
+- evaluate wildcard usage carefully; leading wildcards often defeat indexes
+- account for security mode / field access requirements when queries move into Apex
 
 ---
 
-## CLI Commands
+## Output Format
 
-```bash
-# Basic query (JSON output)
-sf data query --query "SELECT Id, Name FROM Account LIMIT 10" --target-org my-org --json
+When finishing, report in this order:
+1. **Query purpose**
+2. **Final SOQL/SOSL**
+3. **Why this shape was chosen**
+4. **Optimization or security notes**
+5. **Execution suggestion if needed**
 
-# CSV output to file
-sf data query --query "SELECT Id, Name FROM Account" --target-org my-org --result-format csv --output-file accounts.csv
+Suggested shape:
 
-# Bulk export (> 2,000 records)
-sf data export bulk --query "SELECT Id, Name FROM Account" --target-org my-org --output-file accounts.csv
-
-# SOSL search
-sf data search --query "FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name)" --target-org my-org
+```text
+Query goal: <summary>
+Query: <soql or sosl>
+Design: <relationship / aggregate / filter choices>
+Notes: <selectivity, limits, security, governor awareness>
+Next step: <run in sf-data or embed in Apex>
 ```
 
 ---
 
 ## Cross-Skill Integration
 
-| Skill | When to Use | Example |
-|-------|-------------|---------|
-| sf-apex | Embed queries in Apex | Use the **sf-apex** skill: "Create service with SOQL query for accounts" |
-| sf-data | Execute queries against org | Use the **sf-data** skill: "Query active accounts from production" |
-| sf-debug | Analyze query performance | Use the **sf-debug** skill: "Analyze slow query in debug logs" |
-| sf-lwc | Generate wire queries | Use the **sf-lwc** skill: "Create component with wired account query" |
+| Need | Delegate to | Reason |
+|---|---|---|
+| run the query against an org | [sf-data](../sf-data/SKILL.md) | execution and export |
+| embed the query in services/selectors | [sf-apex](../sf-apex/SKILL.md) | implementation context |
+| analyze slow-query symptoms from logs | [sf-debug](../sf-debug/SKILL.md) | runtime evidence |
+| wire query-backed UI | [sf-lwc](../sf-lwc/SKILL.md) | frontend integration |
 
 ---
 
-## Document Map
+## Reference Map
 
-### References (Extracted)
-| Document | Description |
-|----------|-------------|
-| [SOQL Syntax Reference](references/soql-syntax-reference.md) | Complete syntax, operators, dates, relationships, aggregates, advanced features |
-| [Query Optimization](references/query-optimization.md) | Indexing, selectivity, patterns, query plan, governor limits, security |
+### Start here
+- [references/soql-syntax-reference.md](references/soql-syntax-reference.md)
+- [references/query-optimization.md](references/query-optimization.md)
+- [references/cli-commands.md](references/cli-commands.md)
 
-### Docs
-| Document | Description |
-|----------|-------------|
-| [soql-reference.md](references/soql-reference.md) | Complete SOQL syntax reference |
-| [cli-commands.md](references/cli-commands.md) | SF CLI query commands |
-| [anti-patterns.md](references/anti-patterns.md) | Common mistakes and how to avoid them |
-| [selector-patterns.md](references/selector-patterns.md) | Query abstraction patterns (vanilla Apex) |
-| [field-coverage-rules.md](references/field-coverage-rules.md) | Ensure queries include all accessed fields |
-
-### Templates
-| Template | Description |
-|----------|-------------|
-| [basic-queries.soql](assets/basic-queries.soql) | Basic SOQL syntax examples |
-| [aggregate-queries.soql](assets/aggregate-queries.soql) | COUNT, SUM, GROUP BY patterns |
-| [relationship-queries.soql](assets/relationship-queries.soql) | Parent-child traversals |
-| [optimization-patterns.soql](assets/optimization-patterns.soql) | Selectivity and indexing |
-| [selector-class.cls](assets/selector-class.cls) | Selector class template |
-| [bulkified-query-pattern.cls](assets/bulkified-query-pattern.cls) | Map-based bulk lookups |
+### Specialized guidance
+- [references/soql-reference.md](references/soql-reference.md)
+- [references/anti-patterns.md](references/anti-patterns.md)
+- [references/selector-patterns.md](references/selector-patterns.md)
+- [references/field-coverage-rules.md](references/field-coverage-rules.md)
+- [assets/](assets/)
 
 ---
 
-## Dependencies
+## Score Guide
 
-**Required**: Target org with `sf` CLI authenticated
-
-**Recommended**: sf-debug (for query plan analysis), sf-apex (for embedding in Apex code)
-
----
-
-## Credits
-
-See [CREDITS.md](CREDITS.md) for acknowledgments of community resources that shaped this skill.
+| Score | Meaning |
+|---|---|
+| 90+ | production-optimized query |
+| 80–89 | good query with minor improvements possible |
+| 70–79 | functional but performance concerns remain |
+| < 70 | needs revision before production use |

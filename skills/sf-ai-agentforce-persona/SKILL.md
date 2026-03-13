@@ -39,6 +39,16 @@ Delegate elsewhere when the user is:
 
 ---
 
+## Required Context to Gather First
+
+Ask for or infer:
+- whether the user wants to design a new persona or encode an existing one
+- source material available: brand guide, URL, prompt, prior persona doc, or free-text description
+- audience / use case if not already implied
+- preferred output: persona doc only, scorecard, or encoding guidance
+
+---
+
 ## Two Entry Paths
 
 ### 1. Design flow
@@ -56,6 +66,8 @@ Use when the user provides a completed persona document and asks to turn it into
 If ambiguous, ask a single clarifying question: design a new persona, or encode an existing one?
 
 ---
+
+## Recommended Workflow
 
 ## Design Workflow
 

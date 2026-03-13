@@ -15,202 +15,157 @@ metadata:
 
 # sf-integration: Salesforce Integration Patterns Expert
 
-Expert integration architect specializing in secure callout patterns, event-driven architecture, and external service registration for Salesforce.
+Use this skill when the user needs **integration architecture and runtime plumbing**: Named Credentials, External Credentials, External Services, REST/SOAP callout patterns, Platform Events, CDC, and event-driven integration design.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Named Credential Generation**: OAuth 2.0, JWT Bearer, Certificate, or Custom authentication
-2. **External Credential Generation**: Modern External Credentials (API 61+) with Named Principals
-3. **External Service Registration**: Generate ExternalServiceRegistration from OpenAPI/Swagger specs
-4. **REST/SOAP Callout Patterns**: Sync and async implementations ([details](references/callout-patterns.md))
-5. **Platform Events & CDC**: Event definitions, publishers, subscribers ([details](references/event-patterns.md))
-6. **Validation & Scoring**: Score integrations against 6 categories (0-120 points)
+Use `sf-integration` when the work involves:
+- `.namedCredential-meta.xml` or External Credential metadata
+- outbound REST/SOAP callouts
+- External Service registration from OpenAPI specs
+- Platform Events, CDC, and event-driven architecture
+- choosing sync vs async integration patterns
 
-## Key Insights
-
-| Insight | Details |
-|---------|---------|
-| **Named Credential Architecture** | Legacy (pre-API 61) vs External Credentials (API 61+) — check org API version first |
-| **Callouts in Triggers** | Synchronous callouts NOT allowed — use async (Queueable, @future) |
-| **Governor Limits** | 100 callouts per transaction, 120s timeout max — batch callouts, use async |
-| **External Services** | Auto-generates Apex from OpenAPI specs — requires Named Credential for auth |
+Delegate elsewhere when the user is:
+- configuring the OAuth app itself → [sf-connected-apps](../sf-connected-apps/SKILL.md)
+- writing Apex-only business logic → [sf-apex](../sf-apex/SKILL.md)
+- deploying metadata → [sf-deploy](../sf-deploy/SKILL.md)
+- importing/exporting data → [sf-data](../sf-data/SKILL.md)
 
 ---
 
-## Named Credential Architecture (API 61+)
+## Required Context to Gather First
 
-| Feature | Legacy Named Credential | External Credential (API 61+) |
-|---------|------------------------|------------------------------|
-| **API Version** | Pre-API 61 | API 61+ (Spring '24+) |
-| **Principal Concept** | Single principal | Named + Per-User Principal |
-| **OAuth Support** | Basic OAuth 2.0 | Full OAuth 2.0 + PKCE, JWT |
-| **Recommendation** | Legacy orgs only | **Use for all new development** |
+Ask for or infer:
+- integration style: outbound callout, inbound event, External Service, CDC, platform event
+- auth method
+- sync vs async requirement
+- system endpoint / spec details
+- rate limits, retry expectations, and failure tolerance
+- whether this is net-new design or repair of an existing integration
 
 ---
 
-## Workflow (5-Phase Pattern)
+## Recommended Workflow
 
-### Phase 1: Requirements Gathering
+### 1. Choose the integration pattern
+| Need | Default pattern |
+|---|---|
+| authenticated outbound API call | Named Credential / External Credential + Apex or Flow |
+| spec-driven API client | External Service |
+| trigger-originated callout | async callout pattern |
+| decoupled event publishing | Platform Events |
+| change-stream consumption | CDC |
 
-**Ask the user** to gather: integration type (outbound REST/SOAP, inbound, event-driven), auth method (OAuth 2.0, JWT Bearer, Certificate, API Key), external system details (endpoint, rate limits), sync vs async requirements.
+### 2. Choose the auth model
+Prefer secure runtime-managed auth:
+- Named Credentials / External Credentials
+- OAuth or JWT via the right credential model
+- no hardcoded secrets in code
 
-### Phase 2: Template Selection
+### 3. Generate from the right templates
+Use the provided assets under:
+- `assets/named-credentials/`
+- `assets/external-credentials/`
+- `assets/external-services/`
+- `assets/callouts/`
+- `assets/platform-events/`
+- `assets/cdc/`
+- `assets/soap/`
 
-| Integration Need | Template | Location |
-|-----------------|----------|----------|
-| Named Credentials | `oauth-client-credentials.namedCredential-meta.xml` | `assets/named-credentials/` |
-| External Credentials | `oauth-external-credential.externalCredential-meta.xml` | `assets/external-credentials/` |
-| External Services | `openapi-registration.externalServiceRegistration-meta.xml` | `assets/external-services/` |
-| REST Callouts | `rest-sync-callout.cls`, `rest-queueable-callout.cls` | `assets/callouts/` |
-| SOAP Callouts | `soap-callout-service.cls` | `assets/soap/` |
-| Platform Events | `platform-event-definition.object-meta.xml` | `assets/platform-events/` |
-| CDC Subscribers | `cdc-subscriber-trigger.trigger` | `assets/cdc/` |
+### 4. Validate operational safety
+Check:
+- timeout and retry handling
+- async strategy for trigger-originated work
+- logging / observability
+- event retention and subscriber implications
 
-### Phase 3: Generation & Validation
+### 5. Hand off deployment or implementation details
+Use:
+- [sf-deploy](../sf-deploy/SKILL.md) for deployment
+- [sf-apex](../sf-apex/SKILL.md) for deeper service / retry code
+- [sf-flow](../sf-flow/SKILL.md) for declarative HTTP callout orchestration
 
+---
+
+## High-Signal Rules
+
+- never hardcode credentials
+- do not do synchronous callouts from triggers
+- define timeout behavior explicitly
+- plan retries for transient failures
+- use middleware / event-driven patterns when outbound volume is high
+- prefer External Credentials architecture for new development when supported
+
+Common anti-patterns:
+- sync trigger callouts
+- no retry or dead-letter strategy
+- no request/response logging
+- mixing auth setup responsibilities with runtime integration design
+
+---
+
+## Output Format
+
+When finishing, report in this order:
+1. **Integration pattern chosen**
+2. **Auth model chosen**
+3. **Files created or updated**
+4. **Operational safeguards**
+5. **Deployment / testing next step**
+
+Suggested shape:
+
+```text
+Integration: <summary>
+Pattern: <named credential / external service / event / cdc / callout>
+Files: <paths>
+Safety: <timeouts, retries, async, logging>
+Next step: <deploy, register, test, or implement>
 ```
-force-app/main/default/
-├── namedCredentials/          # Legacy Named Credentials
-├── externalCredentials/       # External Credentials (API 61+)
-├── externalServiceRegistrations/
-├── classes/                   # Callout services, handlers
-├── objects/{{EventName}}__e/  # Platform Events
-└── triggers/                  # Event/CDC subscribers
-```
-
-### Phase 4: Deployment (CRITICAL ORDER)
-
-1. Named Credentials / External Credentials FIRST
-2. External Service Registrations (depends on Named Credentials)
-3. Apex classes (callout services, handlers)
-4. Platform Events / CDC configuration
-5. Triggers (depends on events being deployed)
-
-Use the **sf-deploy** skill
-
-### Phase 5: Testing & Verification
-
-1. **Named Credential**: Setup → Named Credentials → Test Connection
-2. **External Service**: Invoke generated Apex methods
-3. **Callout**: Anonymous Apex or test class with `Test.setMock()`
-4. **Events**: Publish and verify subscriber execution
-
----
-
-## Named Credentials
-
-| Auth Type | Use Case | Template |
-|-----------|----------|----------|
-| **OAuth 2.0 Client Credentials** | Server-to-server | `oauth-client-credentials.namedCredential-meta.xml` |
-| **OAuth 2.0 JWT Bearer** | CI/CD, backend | `oauth-jwt-bearer.namedCredential-meta.xml` |
-| **Certificate (Mutual TLS)** | High-security | `certificate-auth.namedCredential-meta.xml` |
-| **Custom (API Key/Basic)** | Simple APIs | `custom-auth.namedCredential-meta.xml` |
-
-Templates in `assets/named-credentials/`. **NEVER hardcode credentials.**
-
----
-
-## External Services (OpenAPI/Swagger)
-
-**Process**: Obtain OpenAPI spec → Create Named Credential → Register External Service → Salesforce auto-generates `ExternalService.{{ServiceName}}` Apex classes.
-
-```apex
-ExternalService.Stripe stripe = new ExternalService.Stripe();
-ExternalService.Stripe_createCustomer_Request req = new ExternalService.Stripe_createCustomer_Request();
-req.email = 'customer@example.com';
-ExternalService.Stripe_createCustomer_Response resp = stripe.createCustomer(req);
-```
-
----
-
-## Callout Patterns
-
-> See [references/callout-patterns.md](references/callout-patterns.md) for complete REST and SOAP implementations.
-
-| Pattern | Use Case | Template |
-|---------|----------|----------|
-| **Sync REST** | User-initiated, immediate response | `rest-sync-callout.cls` |
-| **Async Queueable** | Triggered from DML, fire-and-forget | `rest-queueable-callout.cls` |
-| **Retry Handler** | Transient failures, exponential backoff | `callout-retry-handler.cls` |
-| **SOAP (WSDL2Apex)** | WSDL-based services | `soap-callout-service.cls` |
-
-**Key rules**: Use Named Credentials (`callout:{{NC}}/path`), set timeout (`req.setTimeout(120000)`), handle 4xx/5xx status codes.
-
----
-
-## Event-Driven Patterns
-
-> See [references/event-patterns.md](references/event-patterns.md) for complete Platform Event and CDC implementations.
-> See [references/event-driven-architecture-guide.md](references/event-driven-architecture-guide.md) for EDA patterns, Pub/Sub API, Event Relays, and monitoring.
-
-**Platform Events**: Standard Volume (~2K events/hour, 3-day retention) or High Volume (millions/day, 24-hour retention). Publish via `EventBus.publish()`, subscribe via triggers. Use `PublishAfterCommit` (default) to ensure events only fire on successful transactions. Use `PublishImmediately` only when the event must fire regardless of transaction outcome.
-
-**Change Data Capture (CDC)**: Enable via Setup → Integrations → CDC. Channel: `{{Object}}ChangeEvent`. Change types: CREATE, UPDATE, DELETE, UNDELETE.
-
-**Pub/Sub API** (recommended for external consumers): gRPC-based subscription to Platform Events and CDC. Replaces legacy Streaming API.
-
-> ⚠️ **PushTopic, Generic Streaming Events, and legacy Streaming API are deprecated** — they no longer receive new investments. Migrate to **Pub/Sub API** for external consumers or **empApi** for LWC subscribers.
-
-> ⚠️ **For high-volume outbound, use middleware + Platform Events.** Do NOT use async Apex directly — it consumes shared daily limits (250K). Let middleware (MuleSoft, custom Pub/Sub consumer) handle delivery, retries, and enrichment.
-
----
-
-## Scoring System (120 Points)
-
-> See [references/scoring-rubric.md](references/scoring-rubric.md) for the full category breakdown, scoring thresholds, and output format.
-
-**Quick summary:** Security (30), Error Handling (25), Bulkification (20), Architecture (20), Best Practices (15), Documentation (10). Score 108+ = Excellent. Score <54 = BLOCK.
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Problem | Fix |
-|--------------|---------|-----|
-| Hardcoded credentials | Security vulnerability | Use Named Credentials |
-| Sync callout in trigger | `CalloutException` | Use Queueable |
-| No timeout specified | Default 10s too short | `req.setTimeout(120000)` |
-| No retry logic | Transient failures | Exponential backoff |
-| 100+ callouts per txn | Governor limit | Batch + async |
-| No logging | Can't debug production | Log requests/responses |
-
----
-
-## CLI Commands & Helper Scripts
-
-> See [references/cli-reference.md](references/cli-reference.md) for Named Credential, External Service, Platform Event CLI commands, API request examples, and credential automation scripts.
 
 ---
 
 ## Cross-Skill Integration
 
-| To Skill | When to Use |
-|----------|-------------|
-| sf-connected-apps | OAuth Connected App for Named Credential |
-| sf-apex | Custom callout service beyond templates |
-| sf-metadata | Query existing Named Credentials |
-| sf-deploy | Deploy to org |
-| sf-ai-agentscript | Agent action using External Service |
-| sf-flow | HTTP Callout Flow for agent |
-
-**Agentforce Integration Flow**: sf-integration → Named Credential + External Service → sf-flow → HTTP Callout wrapper → sf-ai-agentscript → `flow://` target → sf-deploy
+| Need | Delegate to | Reason |
+|---|---|---|
+| OAuth app setup | [sf-connected-apps](../sf-connected-apps/SKILL.md) | consumer key / cert / app config |
+| advanced callout service code | [sf-apex](../sf-apex/SKILL.md) | Apex implementation |
+| declarative HTTP callout / Flow wrapper | [sf-flow](../sf-flow/SKILL.md) | Flow orchestration |
+| deploy integration metadata | [sf-deploy](../sf-deploy/SKILL.md) | validation and rollout |
+| use integration from Agentforce | [sf-ai-agentscript](../sf-ai-agentscript/SKILL.md) | agent action composition |
 
 ---
 
-## Additional Resources
+## Reference Map
 
-- [Callout Patterns](references/callout-patterns.md) — REST and SOAP implementations
-- [Event Patterns](references/event-patterns.md) — Platform Events and CDC
-- [Event-Driven Architecture Guide](references/event-driven-architecture-guide.md) — EDA patterns, Pub/Sub API, Event Relays, monitoring
-- [Messaging API v2](references/messaging-api-v2.md) — MIAW custom client architecture (Agentforce external chat)
-- [Scoring Rubric](references/scoring-rubric.md) — 120-point scoring details
-- [CLI Reference](references/cli-reference.md) — CLI commands and helper scripts
+### Start here
+- [references/named-credentials-guide.md](references/named-credentials-guide.md)
+- [references/external-services-guide.md](references/external-services-guide.md)
+- [references/callout-patterns.md](references/callout-patterns.md)
+- [references/security-best-practices.md](references/security-best-practices.md)
+
+### Event-driven / platform patterns
+- [references/event-patterns.md](references/event-patterns.md)
+- [references/platform-events-guide.md](references/platform-events-guide.md)
+- [references/cdc-guide.md](references/cdc-guide.md)
+- [references/event-driven-architecture-guide.md](references/event-driven-architecture-guide.md)
+- [references/messaging-api-v2.md](references/messaging-api-v2.md)
+
+### CLI / automation / scoring
+- [references/cli-reference.md](references/cli-reference.md)
+- [references/named-credentials-automation.md](references/named-credentials-automation.md)
+- [references/scoring-rubric.md](references/scoring-rubric.md)
+- [assets/](assets/)
 
 ---
 
-## Notes & Dependencies
+## Score Guide
 
-- **API Version**: 62.0+ recommended for External Credentials
-- **Required Permissions**: API Enabled, External Services access
-- **Optional Skills**: sf-connected-apps, sf-apex, sf-deploy
-- **Scoring Mode**: Strict (block deployment if score < 54)
+| Score | Meaning |
+|---|---|
+| 108+ | strong production-ready integration design |
+| 90–107 | good design with some hardening left |
+| 72–89 | workable but needs architectural review |
+| < 72 | unsafe / incomplete for deployment |

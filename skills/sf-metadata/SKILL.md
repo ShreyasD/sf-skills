@@ -15,189 +15,140 @@ metadata:
 
 # sf-metadata: Salesforce Metadata Generation and Org Querying
 
-Expert Salesforce administrator specializing in metadata architecture, security model design, and schema best practices. Generate production-ready metadata XML and query org structures using sf CLI v2.
+Use this skill when the user needs **metadata definition or org metadata discovery**: custom objects, fields, validation rules, record types, page layouts, permission sets, or schema inspection with `sf` CLI.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Metadata Generation**: Create Custom Objects, Fields, Profiles, Permission Sets, Validation Rules, Record Types, Page Layouts
-2. **Org Querying**: Describe objects, list fields, query metadata using sf CLI v2
-3. **Validation & Scoring**: Score metadata against 6 categories (0-120 points)
-4. **Cross-Skill Integration**: Provide metadata discovery for sf-apex and sf-flow
-5. **Deployment Integration**: Deploy metadata via sf-deploy skill
+Use `sf-metadata` when the work involves:
+- object, field, validation rule, record type, layout, profile, or permission-set metadata
+- `.object-meta.xml`, `.field-meta.xml`, `.profile-meta.xml`, and related metadata files
+- describing schema before coding or Flow work
+- generating metadata XML from requirements
 
-## Document Map
-
-| Need | Document | Description |
-|------|----------|-------------|
-| **PermSet auto-gen** | [references/permset-auto-generation.md](references/permset-auto-generation.md) | Phase 3.5 rules, field type filters, XML example |
-| **Scoring details** | [references/best-practices-scoring.md](references/best-practices-scoring.md) | 6-category breakdown, field template tips |
-| **Field & CLI ref** | [references/field-and-cli-reference.md](references/field-and-cli-reference.md) | Field types, relationships, validation patterns, CLI commands |
-| **Naming** | [references/naming-conventions.md](references/naming-conventions.md) | API name conventions |
-| **Orchestration** | [references/orchestration.md](references/orchestration.md) | Extended orchestration patterns |
+Delegate elsewhere when the user is:
+- analyzing permission access rather than defining metadata → [sf-permissions](../sf-permissions/SKILL.md)
+- deploying metadata → [sf-deploy](../sf-deploy/SKILL.md)
+- editing Flow XML → [sf-flow](../sf-flow/SKILL.md)
 
 ---
 
-## CRITICAL: Orchestration Order
+## Required Context to Gather First
 
-**sf-metadata → sf-flow → sf-deploy → sf-data** (you are here: sf-metadata)
-
-sf-data requires objects deployed to org. Always deploy BEFORE creating test data.
-
----
-
-## CRITICAL: Field-Level Security
-
-**Deployed fields are INVISIBLE until FLS is configured!** Always prompt for Permission Set generation after creating objects/fields. See [references/permset-auto-generation.md](references/permset-auto-generation.md) for auto-generation workflow.
+Ask for or infer:
+- whether the user wants **generation** or **querying**
+- metadata type(s) involved
+- target object / field / package directory
+- target org alias if querying is required
+- whether permission-set or FLS follow-up will be needed
 
 ---
 
-## Workflow (5-Phase Pattern)
+## Recommended Workflow
 
-### Phase 1: Requirements Gathering
+### 1. Choose the mode
+| Mode | Use when |
+|---|---|
+| generation | the user wants new or updated metadata XML |
+| querying | the user needs object / field / metadata discovery |
 
-**Ask the user** to gather:
-- Operation type: **Generate** metadata OR **Query** org metadata
-- If generating: Metadata type, target object, specific requirements
-- If querying: Query type, target org alias, object name or metadata type
+### 2. Start from templates or CLI describe data
+For generation, use the assets under:
+- `assets/objects/`
+- `assets/fields/`
+- `assets/permission-sets/`
+- `assets/profiles/`
+- `assets/record-types/`
+- `assets/validation-rules/`
+- `assets/layouts/`
 
-**Then**: Check existing metadata (`Glob: **/*-meta.xml`), verify sfdx-project.json exists.
+For querying, prefer `sf` metadata and `sobject describe` commands.
 
-### Phase 2: Template Selection / Query Execution
+### 3. Validate metadata quality
+Check:
+- naming conventions
+- structural correctness
+- field-type fit
+- security / FLS implications
+- downstream deployment dependencies
 
-#### For Generation
+### 4. Plan permission impact
+When new fields or objects are created, account for permission-set follow-up and layout visibility.
 
-| Metadata Type | Template |
-|---------------|----------|
-| Custom Object | `assets/objects/custom-object.xml` |
-| Text/Number/Currency/Date/Checkbox Field | `assets/fields/[type]-field.xml` |
-| Picklist / Multi-Select Picklist | `assets/fields/picklist-field.xml` / `multi-select-picklist.xml` |
-| Lookup / Master-Detail | `assets/fields/lookup-field.xml` / `master-detail-field.xml` |
-| Formula / Roll-Up Summary | `assets/fields/formula-field.xml` / `rollup-summary-field.xml` |
-| Email/Phone/URL/Text Area | `assets/fields/[type]-field.xml` |
-| Profile / Permission Set | `assets/profiles/profile.xml` / `assets/permission-sets/permission-set.xml` |
-| Validation Rule / Record Type / Layout | `assets/[type]/` |
+### 5. Hand off deployment
+Use [sf-deploy](../sf-deploy/SKILL.md) when the user needs the metadata rolled out.
 
-**Template Path Resolution** (try in order):
-1. Installed skill: `~/.claude/skills/sf-metadata/assets/[path]`
-2. Project: `[project-root]/skills/sf-metadata/assets/[path]`
+---
 
-#### For Querying (sf CLI v2)
+## High-Signal Rules
 
-| Query Type | Command |
-|------------|---------|
-| Describe object | `sf sobject describe --sobject [Name] --target-org [alias] --json` |
-| List custom objects | `sf org list metadata --metadata-type CustomObject --target-org [alias] --json` |
-| List metadata types | `sf org list metadata-types --target-org [alias] --json` |
+- field-level security is often the hidden blocker after deployment
+- prefer permission sets over profile-centric access patterns
+- avoid hardcoded IDs in formulas or metadata logic
+- validation rules should have intentional bypass strategy when operationally necessary
+- create metadata before attempting Flow or data tasks that depend on it
 
-> See [references/field-and-cli-reference.md](references/field-and-cli-reference.md) for complete CLI commands and interactive generation.
+---
 
-### Phase 3: Generation / Validation
+## Output Format
 
-**File locations**:
-- Objects: `force-app/main/default/objects/[ObjectName__c]/[ObjectName__c].object-meta.xml`
-- Fields: `force-app/main/default/objects/[ObjectName]/fields/[FieldName__c].field-meta.xml`
-- Permission Sets: `force-app/main/default/permissionsets/[PermSetName].permissionset-meta.xml`
-- Validation Rules: `force-app/main/default/objects/[ObjectName]/validationRules/[RuleName].validationRule-meta.xml`
+When finishing, report in this order:
+1. **Metadata created or queried**
+2. **Files created or updated**
+3. **Key schema/security decisions**
+4. **Permission / layout follow-ups**
+5. **Deploy next step**
 
-**Validation Report Format**:
+Suggested shape:
+
+```text
+Metadata task: <generate / query>
+Items: <objects, fields, rules, layouts, permsets>
+Files: <paths>
+Notes: <naming, field types, security, dependencies>
+Next step: <deploy, assign permset, or verify in Setup>
 ```
-Score: 105/120 ⭐⭐⭐⭐ Very Good
-├─ Structure & Format:  20/20 (100%)
-├─ Naming Conventions:  18/20 (90%)
-├─ Data Integrity:      15/20 (75%)
-├─ Security & FLS:      20/20 (100%)
-├─ Documentation:       18/20 (90%)
-└─ Best Practices:      14/20 (70%)
-```
-
-> See [references/best-practices-scoring.md](references/best-practices-scoring.md) for detailed category breakdowns and field template tips.
-
-### Phase 3.5: Permission Set Auto-Generation
-
-> See [references/permset-auto-generation.md](references/permset-auto-generation.md) for the complete workflow, field type rules, and XML template.
-
-**Quick rules**: Exclude required fields (auto-visible) and Name fields. Formula/Roll-Up fields get `editable: false`. Master-Detail controlled by parent.
-
-### Phase 4: Deployment
-
-Use the **sf-deploy** skill: "Deploy metadata at force-app/main/default/objects/[ObjectName] to [target-org]"
-
-Post-deployment: `sf org assign permset --name [ObjectName]_Access --target-org [alias]`
-
-### Phase 5: Verification
-
-Verify in Setup → Object Manager, check FLS for new fields, add to Page Layouts if needed.
-
----
-
-## Scoring (120 Points)
-
-> See [references/best-practices-scoring.md](references/best-practices-scoring.md) for full criteria.
-
-**Categories**: Structure & Format (20), Naming Conventions (20), Data Integrity (20), Security & FLS (20), Documentation (20), Best Practices (20).
-
-**Thresholds**: 108+ Excellent | 96+ Good | 84+ Acceptable | <72 BLOCKED
 
 ---
 
 ## Cross-Skill Integration
 
-| From Skill | To sf-metadata | When |
-|------------|----------------|------|
-| sf-apex | → sf-metadata | "Describe Invoice__c" (discover fields before coding) |
-| sf-flow | → sf-metadata | "Describe object fields, record types, validation rules" |
-| sf-data | → sf-metadata | "Describe Custom_Object__c fields" (discover structure) |
-
-| From sf-metadata | To Skill | When |
-|------------------|----------|------|
-| sf-metadata | → sf-deploy | "Deploy with --dry-run" |
-| sf-metadata | → sf-flow | After creating objects/fields that Flow will reference |
+| Need | Delegate to | Reason |
+|---|---|---|
+| deploy metadata | [sf-deploy](../sf-deploy/SKILL.md) | rollout and validation |
+| build Flows on new schema | [sf-flow](../sf-flow/SKILL.md) | declarative automation |
+| build Apex on new schema | [sf-apex](../sf-apex/SKILL.md) | code against metadata |
+| analyze permission access after creation | [sf-permissions](../sf-permissions/SKILL.md) | access auditing |
+| seed data after deploy | [sf-data](../sf-data/SKILL.md) | test data creation |
 
 ---
 
-## Metadata Anti-Patterns
+## Reference Map
 
-| Anti-Pattern | Fix |
-|--------------|-----|
-| Profile-based FLS | Use Permission Sets for granular access |
-| Hardcoded IDs in formulas | Use Custom Settings or Custom Metadata |
-| Validation rule without bypass | Add `$Permission.Bypass_Validation__c` check |
-| Too many picklist values (>200) | Consider Custom Object instead |
-| Auto-number without prefix | Add meaningful prefix: `INV-{0000}` |
-| No description on custom objects | Always document purpose |
+### Start here
+- [references/field-and-cli-reference.md](references/field-and-cli-reference.md)
+- [references/metadata-types-reference.md](references/metadata-types-reference.md)
+- [references/naming-conventions.md](references/naming-conventions.md)
+- [references/orchestration.md](references/orchestration.md)
 
----
-
-## Key Insights
-
-| Insight | Issue | Fix |
-|---------|-------|-----|
-| FLS is the Silent Killer | Deployed fields invisible without FLS | Always prompt for Permission Set generation |
-| Required Fields ≠ Permission Sets | Salesforce rejects required fields in PS | Filter out required fields from fieldPermissions |
-| Orchestration Order | sf-data fails if objects not deployed | sf-metadata → sf-flow → sf-deploy → sf-data |
-
-## Common Errors
-
-| Error | Fix |
-|-------|-----|
-| `Cannot deploy to required field` | Remove from fieldPermissions (auto-visible) |
-| `Field does not exist` | Create Permission Set with field access |
-| `SObject type 'X' not supported` | Deploy metadata first |
-| `Element X is duplicated` | Reorder XML elements alphabetically |
+### Security / scoring / examples
+- [references/fls-best-practices.md](references/fls-best-practices.md)
+- [references/permset-auto-generation.md](references/permset-auto-generation.md)
+- [references/best-practices-scoring.md](references/best-practices-scoring.md)
+- [references/field-types-guide.md](references/field-types-guide.md)
+- [references/field-types-example.md](references/field-types-example.md)
+- [references/custom-object-example.md](references/custom-object-example.md)
+- [references/permission-set-example.md](references/permission-set-example.md)
+- [references/profile-permission-guide.md](references/profile-permission-guide.md)
+- [references/sf-cli-commands.md](references/sf-cli-commands.md)
+- [assets/](assets/)
 
 ---
 
-## Validation
+## Score Guide
 
-```bash
-python3 ~/.claude/skills/sf-metadata/hooks/scripts/validate_metadata.py <file_path>
-```
-
-**Scoring**: 120 points / 6 categories. Minimum 84 (70%) for deployment.
-
----
-
-## Dependencies
-
-**Docs**: `references/` folder — metadata-types-reference, field-types-guide, fls-best-practices, naming-conventions
-**Required**: sf-deploy (optional) for deployment | API 66.0 | Block if score < 72
+| Score | Meaning |
+|---|---|
+| 108+ | strong production-ready metadata |
+| 96–107 | good metadata with minor review items |
+| 84–95 | acceptable but validate carefully |
+| < 84 | block deployment until corrected |

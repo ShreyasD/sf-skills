@@ -15,240 +15,132 @@ metadata:
 
 # sf-testing: Salesforce Test Execution & Coverage Analysis
 
-Expert testing engineer specializing in Apex test execution, code coverage analysis, mock frameworks, and agentic test-fix loops. Execute tests, analyze failures, and automatically fix issues.
+Use this skill when the user needs **Apex test execution and failure analysis**: running tests, checking coverage, interpreting failures, improving coverage, and managing a disciplined test-fix loop for Salesforce code.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Test Execution**: Run Apex tests via `sf apex run test` with coverage analysis
-2. **Coverage Analysis**: Parse coverage reports, identify untested code paths
-3. **Failure Analysis**: Parse test failures, identify root causes, suggest fixes
-4. **Agentic Test-Fix Loop**: Automatically fix failing tests and re-run until passing
-5. **Test Generation**: Create test classes using sf-apex patterns
-6. **Bulk Testing**: Validate with 251+ records for governor limit safety
+Use `sf-testing` when the work involves:
+- `sf apex run test` workflows
+- Apex unit-test failures
+- code coverage analysis
+- identifying uncovered lines and missing test scenarios
+- structured test-fix loops for Apex code
 
-## Document Map
-
-| Need | Document | Description |
-|------|----------|-------------|
-| **Test patterns** | [references/test-patterns.md](references/test-patterns.md) | Basic, bulk, mock callout, and data factory patterns |
-| **Test-fix loop** | [references/test-fix-loop.md](references/test-fix-loop.md) | Agentic loop implementation & failure decision tree |
-| **Best practices** | [references/testing-best-practices.md](references/testing-best-practices.md) | General testing guidelines |
-| **CLI commands** | [references/cli-commands.md](references/cli-commands.md) | SF CLI test commands |
-| **Mocking** | [references/mocking-patterns.md](references/mocking-patterns.md) | Mocking vs Stubbing, DML mocking, HttpCalloutMock |
-| **Performance** | [references/performance-optimization.md](references/performance-optimization.md) | Fast tests, reduce execution time |
+Delegate elsewhere when the user is:
+- writing or refactoring production Apex → [sf-apex](../sf-apex/SKILL.md)
+- testing Agentforce agents → [sf-ai-agentforce-testing](../sf-ai-agentforce-testing/SKILL.md)
+- testing LWC with Jest → [sf-lwc](../sf-lwc/SKILL.md)
 
 ---
 
-## Workflow (5-Phase Pattern)
+## Required Context to Gather First
 
-### Phase 1: Test Discovery
-
-**Ask the user** to gather:
-- Test scope (single class, all tests, specific test suite)
-- Target org alias
-- Coverage threshold requirement (default: 75%, recommended: 90%)
-- Whether to enable agentic fix loop
-
-**Then**:
-1. Check existing tests: `Glob: **/*Test*.cls`, `Glob: **/*_Test.cls`
-2. Check for Test Data Factories: `Glob: **/*TestDataFactory*.cls`
-
-### Phase 2: Test Execution
-
-**Run Single Test Class**:
-```bash
-sf apex run test --class-names MyClassTest --code-coverage --result-format json --output-dir test-results --target-org [alias]
-```
-
-**Run All Tests**:
-```bash
-sf apex run test --test-level RunLocalTests --code-coverage --result-format json --output-dir test-results --target-org [alias]
-```
-
-**Run Specific Methods**:
-```bash
-sf apex run test --tests MyClassTest.testMethod1 --tests MyClassTest.testMethod2 --code-coverage --result-format json --target-org [alias]
-```
-
-**Run Test Suite / All Tests (Concise)**:
-```bash
-sf apex run test --suite-names MySuite --code-coverage --result-format json --target-org [alias]
-sf apex run test --test-level RunLocalTests --code-coverage --result-format json --concise --target-org [alias]
-```
-
-### Phase 3: Results Analysis
-
-Parse `test-results/test-run-id.json` and report:
-
-```
-📊 TEST EXECUTION RESULTS
-════════════════════════════════════════════════════════════════
-
-SUMMARY
-───────────────────────────────────────────────────────────────
-✅ Passed:    42    ❌ Failed:    3    📈 Coverage: 78.5%
-
-FAILED TESTS
-───────────────────────────────────────────────────────────────
-❌ AccountServiceTest.testBulkInsert
-   Line 45: System.AssertException: Assertion Failed
-
-COVERAGE BY CLASS
-───────────────────────────────────────────────────────────────
-Class                   Lines  Covered  Uncovered   %
-AccountService          150    142      8           94.7% ✅
-OpportunityTrigger      45     28       17          62.2% ⚠️
-ContactHelper           30     15       15          50.0% ❌
-```
-
-### Phase 4: Agentic Test-Fix Loop
-
-> See [references/test-fix-loop.md](references/test-fix-loop.md) for the full implementation flow and failure analysis decision tree.
-
-When tests fail, the agentic loop: parses failures → reads source → identifies root cause → invokes sf-apex to fix → re-runs (max 3 attempts). Key error types: AssertException, NullPointerException, DmlException, LimitException, QueryException.
-
-### Cross-Skill: Flow Testing (GA)
-
-Flow tests are now GA and run separately from Apex tests:
-
-```bash
-# Run specific flow tests
-sf flow run test --tests FlowTest1,FlowTest2 --target-org [alias] --json
-
-# Run all flow tests
-sf flow run test --target-org [alias] --json
-
-# Get results for an async flow test run
-sf flow get test --test-run-id <id> --target-org [alias] --json
-```
-
-**Key flags:**
-- `--tests` (`-t`) — comma-separated Flow test names
-- `--wait <minutes>` — wait for completion (default: async)
-- `--json` — structured output
-
-> **Unified Test Runner [Beta]**: `sf logic run test --test-level RunLocalTests --code-coverage --target-org [alias]` (v2.107.6+). Runs both Apex and Flow tests together. For production, prefer separate `sf apex run test` and `sf flow run test`.
-
-### Phase 5: Coverage Improvement
-
-**If coverage < threshold**:
-1. `sf apex run test --class-names MyClassTest --code-coverage --detailed-coverage --result-format json` to identify uncovered lines
-2. Use sf-apex to generate test methods targeting those lines
-3. Use the **sf-data** skill: "Create 251 [ObjectName] records for bulk testing"
-4. Re-run and verify
+Ask for or infer:
+- target org alias
+- desired test scope: single class, specific methods, suite, or local tests
+- coverage threshold expectation
+- whether the user wants diagnosis only or a test-fix loop
+- whether related test data factories already exist
 
 ---
 
-## Best Practices (120-Point Scoring)
+## Recommended Workflow
 
-| Category | Points | Key Rules |
-|----------|--------|-----------|
-| **Test Coverage** | 25 | 90%+ class coverage; all public methods tested; edge cases covered |
-| **Assertion Quality** | 25 | Assert class used; meaningful messages; positive AND negative tests |
-| **Bulk Testing** | 20 | Test with 251+ records; verify no SOQL/DML in loops under load |
-| **Test Data** | 20 | Test Data Factory used; no hardcoded IDs; @TestSetup for efficiency |
-| **Isolation** | 15 | SeeAllData=false; no org dependencies; mock external callouts |
-| **Documentation** | 15 | Test method names describe scenario; comments for complex setup |
+### 1. Discover test scope
+Identify:
+- existing test classes
+- target production classes
+- test data factories / setup helpers
 
-**Thresholds**: 108+ Excellent | 96+ Good | 84+ Acceptable | 72+ Below standard | <72 BLOCKED
+### 2. Run the smallest useful test set first
+Start narrow when debugging a failure; widen only after the fix is stable.
 
----
+### 3. Analyze results
+Focus on:
+- failing methods
+- exception types and stack traces
+- uncovered lines / weak coverage areas
+- whether failures indicate bad test data, brittle assertions, or broken production logic
 
-## Test Patterns & Templates
+### 4. Run a disciplined fix loop
+When the issue is code or test quality:
+- delegate code fixes to [sf-apex](../sf-apex/SKILL.md) when needed
+- add or improve tests
+- rerun focused tests before broader regression
 
-> See [references/test-patterns.md](references/test-patterns.md) for full Apex code examples of all 4 patterns.
-
-| Pattern | Template | Use Case |
-|---------|----------|----------|
-| Basic Test Class | `assets/basic-test.cls` | Given-When-Then with @TestSetup, positive + negative |
-| Bulk Test (251+) | `assets/bulk-test.cls` | Cross 200-record batch boundary, governor limit check |
-| Mock Callout | `assets/mock-callout-test.cls` | HttpCalloutMock for external API testing |
-| Test Data Factory | `assets/test-data-factory.cls` | Reusable data creation with convenience insert |
-
-Additional templates: `assets/dml-mock.cls` (35x faster tests), `assets/stub-provider-example.cls` (dynamic behavior)
-
----
-
-## Testing Guardrails (MANDATORY)
-
-**BEFORE running tests, verify:**
-
-| Check | Command | Why |
-|-------|---------|-----|
-| Org authenticated | `sf org display --target-org [alias]` | Tests need valid org connection |
-| Classes deployed | `sf project deploy report --target-org [alias]` | Can't test undeployed code |
-| Test data exists | Check @TestSetup or TestDataFactory | Tests need data to operate on |
-
-**NEVER do these:**
-
-| Anti-Pattern | Problem | Correct Pattern |
-|--------------|---------|-----------------|
-| `@IsTest(SeeAllData=true)` | Tests depend on org data, break in clean orgs | Always `SeeAllData=false` (default) |
-| Hardcoded Record IDs | IDs differ between orgs | Query or create in test |
-| No assertions | Tests pass without validating anything | Assert every expected outcome |
-| Single record tests only | Misses bulk trigger issues | Always test with 200+ records |
-| `Test.startTest()` without `Test.stopTest()` | Async code won't execute | Always pair start/stop |
+### 5. Improve coverage intentionally
+Cover:
+- positive path
+- negative / exception path
+- bulk path (251+ records where appropriate)
+- callout or async path when relevant
 
 ---
 
-## CLI Command Reference
+## High-Signal Rules
 
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `sf apex run test` | Run tests | See Phase 2 examples |
-| `sf apex get test` | Get async test status | `--test-run-id 707xx...` |
-| `sf apex list log` | List debug logs | `--target-org alias` |
-| `sf apex tail log` | Stream logs real-time | `--target-org alias` |
+- default to `SeeAllData=false`
+- every test should assert meaningful outcomes
+- test bulk behavior, not just single-record happy paths
+- use factories / `@TestSetup` when they improve clarity and speed
+- pair `Test.startTest()` with `Test.stopTest()` when async behavior matters
+- do not hide flaky org dependencies inside tests
 
-**Key flags**: `--code-coverage`, `--detailed-coverage`, `--result-format json`, `--output-dir`, `--test-level RunLocalTests`, `--concise`, `--poll-interval <seconds>` (v2.116.6+)
+---
 
-### Spring '26 Apex Test Annotations
+## Output Format
 
-| Annotation | Purpose | Example |
-|------------|---------|---------|
-| `@isTest(testFor=ClassName.class)` | Explicit test-to-source linking — ties test class to production class for coverage tracking | `@isTest(testFor=AccountService.class)` |
-| `@isTest(isCritical=true)` | Marks tests that always run, even in `RunRelevantTests` mode — use for smoke tests and critical paths | `@isTest(isCritical=true)` |
+When finishing, report in this order:
+1. **What tests were run**
+2. **Pass/fail summary**
+3. **Coverage result**
+4. **Root-cause findings**
+5. **Fix or next-run recommendation**
 
-```apex
-// Spring '26: Link test to source class
-@isTest(testFor=AccountService.class)
-private class AccountServiceTest {
+Suggested shape:
 
-    // Spring '26: Always run this test, even in RunRelevantTests mode
-    @isTest(isCritical=true)
-    static void testCriticalPath() {
-        // ...
-    }
-}
+```text
+Test run: <scope>
+Org: <alias>
+Result: <passed / partial / failed>
+Coverage: <percent / key classes>
+Issues: <highest-signal failures>
+Next step: <fix class, add test, rerun scope, or widen regression>
 ```
-
----
-
-## Common Test Failures & Fixes
-
-| Failure | Likely Cause | Fix |
-|---------|--------------|-----|
-| `MIXED_DML_OPERATION` | User + non-setup object in same txn | Use `System.runAs()` or separate transactions |
-| `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` | Trigger or flow error | Check trigger logic with debug logs |
-| `REQUIRED_FIELD_MISSING` | Test data incomplete | Add required fields to TestDataFactory |
-| `DUPLICATE_VALUE` | Unique field conflict | Use dynamic values or delete existing |
-| `FIELD_CUSTOM_VALIDATION_EXCEPTION` | Validation rule fired | Meet validation criteria in test data |
-| `UNABLE_TO_LOCK_ROW` | Record lock conflict | Use `FOR UPDATE` or retry logic |
 
 ---
 
 ## Cross-Skill Integration
 
-| Skill | When to Use | Example |
-|-------|-------------|---------|
-| sf-apex | Generate test classes, fix failing code | Use the **sf-apex** skill: "Create test class for LeadService" |
-| sf-data | Create bulk test data (251+ records) | Use the **sf-data** skill: "Create 251 Leads for bulk testing" |
-| sf-deploy | Deploy test classes to org | Use the **sf-deploy** skill: "Deploy tests to sandbox" |
-| sf-debug | Analyze failures with debug logs | Use the **sf-debug** skill: "Analyze test failure logs" |
+| Need | Delegate to | Reason |
+|---|---|---|
+| fix production code or author tests | [sf-apex](../sf-apex/SKILL.md) | code generation and repair |
+| create bulk / edge-case data | [sf-data](../sf-data/SKILL.md) | realistic test datasets |
+| deploy updated tests | [sf-deploy](../sf-deploy/SKILL.md) | rollout |
+| inspect detailed runtime logs | [sf-debug](../sf-debug/SKILL.md) | deeper failure analysis |
 
 ---
 
-## Dependencies
+## Reference Map
 
-**Required**: Target org with `sf` CLI authenticated
-**Recommended**: sf-apex (auto-fix), sf-data (bulk test data), sf-debug (log analysis)
+### Start here
+- [references/cli-commands.md](references/cli-commands.md)
+- [references/test-patterns.md](references/test-patterns.md)
+- [references/testing-best-practices.md](references/testing-best-practices.md)
+- [references/test-fix-loop.md](references/test-fix-loop.md)
+
+### Specialized guidance
+- [references/mocking-patterns.md](references/mocking-patterns.md)
+- [references/performance-optimization.md](references/performance-optimization.md)
+- [assets/](assets/)
+
+---
+
+## Score Guide
+
+| Score | Meaning |
+|---|---|
+| 108+ | strong production-grade test confidence |
+| 96–107 | good test suite with minor gaps |
+| 84–95 | acceptable but strengthen coverage / assertions |
+| < 84 | below standard; revise before relying on it |

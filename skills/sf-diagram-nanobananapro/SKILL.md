@@ -47,6 +47,17 @@ Delegate elsewhere when the user wants:
 
 ---
 
+## Required Context to Gather First
+
+Ask for or infer:
+- image type: ERD, UI mockup, architecture illustration, or image edit
+- subject scope and key entities / systems
+- target quality: draft vs presentation vs production asset
+- preferred style and aspect ratio
+- whether the user wants quick mode or an interview-driven prompt build
+
+---
+
 ## Interview-First Workflow
 
 Unless the user explicitly asks for **quick/simple/just generate**, ask clarifying questions first.

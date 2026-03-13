@@ -177,6 +177,17 @@ For full agent DevOps details, including `Agent:` pseudo metadata, publish/activ
 
 ---
 
+## Score Guide
+
+| Score | Meaning |
+|---|---|
+| 90+ | strong deployment plan and execution guidance |
+| 75–89 | good deploy guidance with minor review items |
+| 60–74 | partial coverage of deployment risk |
+| < 60 | insufficient confidence; tighten plan before rollout |
+
+---
+
 ## Completion Format
 
 ```text

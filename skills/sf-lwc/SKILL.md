@@ -14,235 +14,155 @@ metadata:
 
 # sf-lwc: Lightning Web Components Development
 
-Expert frontend engineer specializing in Lightning Web Components for Salesforce. Generate production-ready LWC components using the **PICKLES Framework** for architecture, with proper data binding, Apex/GraphQL integration, event handling, SLDS 2 styling, and comprehensive Jest tests.
+Use this skill when the user needs **Lightning Web Components**: LWC bundles, wire patterns, Apex/GraphQL integration, SLDS 2 styling, accessibility, performance work, or Jest unit tests.
 
-## Core Responsibilities
+## When This Skill Owns the Task
 
-1. **Component Scaffolding**: Generate complete LWC bundles (JS, HTML, CSS, meta.xml)
-2. **PICKLES Architecture**: Apply structured design methodology for robust components
-3. **Wire Service Patterns**: Implement @wire decorators for data fetching (Apex & GraphQL)
-4. **Apex/GraphQL Integration**: Connect LWC to backend with @AuraEnabled and GraphQL
-5. **Event Handling**: Component communication (CustomEvent, LMS, pubsub)
-6. **Lifecycle Management**: Proper use of connectedCallback, renderedCallback, etc.
-7. **Jest Testing**: Generate comprehensive unit tests with advanced patterns
-8. **Accessibility**: WCAG compliance with ARIA attributes, focus management
-9. **Dark Mode**: SLDS 2 compliant styling with global styling hooks
-10. **Performance**: Lazy loading, virtual scrolling, debouncing, efficient rendering
+Use `sf-lwc` when the work involves:
+- `lwc/**/*.js`, `.html`, `.css`, `.js-meta.xml`
+- component scaffolding and bundle design
+- wire service, Apex integration, GraphQL integration
+- SLDS 2, dark mode, and accessibility work
+- Jest unit tests for LWC
 
-## Document Map
-
-| Need | Document | Description |
-|------|----------|-------------|
-| **Component patterns** | [references/component-patterns.md](references/component-patterns.md) | Wire, GraphQL, Modal, Navigation, TypeScript |
-| **LMS guide** | [references/lms-guide.md](references/lms-guide.md) | Lightning Message Service deep dive |
-| **Jest testing** | [references/jest-testing.md](references/jest-testing.md) | Advanced testing patterns |
-| **Accessibility** | [references/accessibility-guide.md](references/accessibility-guide.md) | WCAG compliance, ARIA, focus management |
-| **Performance** | [references/performance-guide.md](references/performance-guide.md) | Dark mode migration, lazy loading, optimization |
-| **Scoring & testing** | [references/scoring-and-testing.md](references/scoring-and-testing.md) | 165-point SLDS 2 scoring, dark mode checklist, Jest patterns |
-| **Advanced features** | [references/advanced-features.md](references/advanced-features.md) | Flow Screen integration, TypeScript, Dashboards, Agentforce |
-| **State management** | [references/state-management.md](references/state-management.md) | @track, Singleton Store, @lwc/state |
-| **Template anti-patterns** | [references/template-anti-patterns.md](references/template-anti-patterns.md) | LLM template mistakes |
-| **Async notifications** | [references/async-notification-patterns.md](references/async-notification-patterns.md) | Platform Events + empApi |
-| **Flow integration** | [references/flow-integration-guide.md](references/flow-integration-guide.md) | Flow-LWC communication |
+Delegate elsewhere when the user is:
+- writing Apex controllers or business logic first → [sf-apex](../sf-apex/SKILL.md)
+- building Flow XML rather than an LWC screen component → [sf-flow](../sf-flow/SKILL.md)
+- deploying metadata → [sf-deploy](../sf-deploy/SKILL.md)
 
 ---
 
-## PICKLES Framework (Architecture Methodology)
+## Required Context to Gather First
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     PICKLES FRAMEWORK                                │
-├─────────────────────────────────────────────────────────────────────┤
-│  P → Prototype    │  Validate ideas with wireframes & mock data    │
-│  I → Integrate    │  Choose data source (LDS, Apex, GraphQL, API)  │
-│  C → Composition  │  Structure component hierarchy & communication │
-│  K → Kinetics     │  Handle user interactions & event flow         │
-│  L → Libraries    │  Leverage platform APIs & base components      │
-│  E → Execution    │  Optimize performance & lifecycle hooks        │
-│  S → Security     │  Enforce permissions, FLS, and data protection │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-| Principle | Key Actions |
-|-----------|-------------|
-| **P - Prototype** | Wireframes, mock data, stakeholder review, separation of concerns |
-| **I - Integrate** | LDS for single records, Apex for complex queries, GraphQL for related data |
-| **C - Composition** | `@api` for parent→child, CustomEvent for child→parent, LMS for cross-DOM |
-| **K - Kinetics** | Debounce search (300ms), disable during submit, keyboard navigation |
-| **L - Libraries** | Use `lightning/*` modules, base components, avoid reinventing |
-| **E - Execution** | Lazy load with `lwc:if`, cache computed values, avoid infinite loops |
-| **S - Security** | `WITH SECURITY_ENFORCED`, input validation, FLS/CRUD checks |
-
-**For detailed PICKLES implementation patterns, see [references/component-patterns.md](references/component-patterns.md)**
+Ask for or infer:
+- component purpose and target surface
+- data source: LDS, Apex, GraphQL, LMS, or external system via Apex
+- whether the user needs tests
+- whether the component must run in Flow, App Builder, Experience Cloud, or dashboard contexts
+- accessibility and styling expectations
 
 ---
 
-## Key Component Patterns
+## Recommended Workflow
 
-### Wire vs Imperative Apex Calls
+### 1. Choose the right architecture
+Use the **PICKLES** mindset:
+- prototype
+- integrate the right data source
+- compose component boundaries
+- define interaction model
+- use platform libraries
+- optimize execution
+- enforce security
 
-| Aspect | Wire (@wire) | Imperative Calls |
-|--------|--------------|------------------|
-| **Execution** | Automatic / Reactive | Manual / Programmatic |
-| **DML** | Read-Only | Insert/Update/Delete |
-| **Data Updates** | Auto on param change | Manual refresh |
-| **Caching** | Built-in | None |
+### 2. Choose the right data access pattern
+| Need | Default pattern |
+|---|---|
+| single-record UI | LDS / `getRecord` |
+| simple CRUD form | base record form components |
+| complex server query | Apex `@AuraEnabled(cacheable=true)` |
+| related graph data | GraphQL wire adapter |
+| cross-DOM communication | Lightning Message Service |
 
-**Quick Decision**: Use `@wire` for read-only display with auto-refresh. Use imperative for user actions, DML, or when you need control over timing.
+### 3. Start from an asset when useful
+Use provided assets for:
+- basic component bundles
+- datatables
+- modal patterns
+- Flow screen components
+- GraphQL components
+- LMS message channels
+- Jest tests
+- TypeScript-enabled components
 
-### Data Source Decision Tree
+### 4. Validate for frontend quality
+Check:
+- accessibility
+- SLDS 2 / dark mode compliance
+- event contracts
+- performance / rerender safety
+- Jest coverage when required
 
-| Scenario | Recommended Approach |
-|----------|---------------------|
-| Single record by ID | Lightning Data Service (`getRecord`) |
-| Simple record CRUD | `lightning-record-form` / `lightning-record-edit-form` |
-| Complex queries | Apex with `@AuraEnabled(cacheable=true)` |
-| Related records | GraphQL wire adapter |
-| Real-time updates | Platform Events / **Pub/Sub API** (empApi for LWC) |
-| External data | Named Credentials + Apex callout |
-
-### Communication Patterns
-
-| Pattern | Direction | Use Case |
-|---------|-----------|----------|
-| `@api` properties | Parent → Child | Pass data down |
-| Custom Events | Child → Parent | Bubble actions up |
-| Lightning Message Service | Any → Any | Cross-DOM communication |
-| Pub/Sub | Sibling → Sibling | Same page, no hierarchy |
-
-**Decision Tree**: Same parent? → Events up, `@api` down. Different DOM trees? → LMS. LWC ↔ Aura/VF? → LMS.
-
-### Lifecycle Hook Guidance
-
-| Hook | When to Use | Avoid |
-|------|-------------|-------|
-| `constructor()` | Initialize properties | DOM access (not ready) |
-| `connectedCallback()` | Subscribe to events, fetch data | Heavy processing |
-| `renderedCallback()` | DOM-dependent logic | Infinite loops, property changes |
-| `disconnectedCallback()` | Cleanup subscriptions/listeners | Async operations |
-
----
-
-## SLDS 2 Validation & Dark Mode
-
-> See [references/scoring-and-testing.md](references/scoring-and-testing.md) for the full 165-point scoring breakdown, dark mode checklist, styling hooks reference, and Jest testing patterns.
-
-**Quick summary**: 8 categories, 165 total points. 150+ Production-ready | 125+ Good | 100+ Functional | <75 Needs work. Dark mode requires CSS variables only (`--slds-g-color-*`), no hardcoded colors.
+### 5. Hand off supporting backend or deploy work
+Use:
+- [sf-apex](../sf-apex/SKILL.md) for controllers / services
+- [sf-deploy](../sf-deploy/SKILL.md) for deployment
+- [sf-testing](../sf-testing/SKILL.md) only for Apex-side test loops, not Jest
 
 ---
 
-## Accessibility
+## High-Signal Rules
 
-WCAG compliance is mandatory for all components.
-
-| Requirement | Implementation |
-|-------------|----------------|
-| **Labels** | `label` on inputs, `aria-label` on icons |
-| **Keyboard** | Enter/Space triggers, Tab navigation |
-| **Focus** | Visible indicator, logical order, focus traps in modals |
-| **Live Regions** | `aria-live="polite"` for dynamic content |
-| **Contrast** | 4.5:1 minimum for text |
-
-**For comprehensive guide, see [references/accessibility-guide.md](references/accessibility-guide.md)**
+- prefer platform base components over reinventing controls
+- use `@wire` for reactive read-only use cases; imperative calls for explicit actions and DML paths
+- do not introduce inaccessible custom UI
+- avoid hardcoded colors; use SLDS 2-compatible styling hooks / variables
+- avoid rerender loops in `renderedCallback()`
+- keep component communication patterns explicit and minimal
 
 ---
 
-## Metadata Configuration
+## Output Format
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>66.0</apiVersion>
-    <isExposed>true</isExposed>
-    <masterLabel>Account Dashboard</masterLabel>
-    <description>SLDS 2 compliant account dashboard with dark mode support</description>
-    <targets>
-        <target>lightning__RecordPage</target>
-        <target>lightning__AppPage</target>
-        <target>lightning__HomePage</target>
-        <target>lightning__FlowScreen</target>
-        <target>lightningCommunity__Page</target>
-        <target>lightning__Dashboard</target>
-    </targets>
-    <targetConfigs>
-        <targetConfig targets="lightning__RecordPage">
-            <objects><object>Account</object></objects>
-            <property name="title" type="String" default="Dashboard"/>
-            <property name="maxRecords" type="Integer" default="10"/>
-        </targetConfig>
-    </targetConfigs>
-</LightningComponentBundle>
-```
+When finishing, report in this order:
+1. **Component(s) created or updated**
+2. **Data access pattern chosen**
+3. **Files changed**
+4. **Accessibility / styling / testing notes**
+5. **Next implementation or deploy step**
 
----
+Suggested shape:
 
-## Flow Screen & Advanced Features
-
-> See [references/advanced-features.md](references/advanced-features.md) for Flow Screen integration (FlowAttributeChangeEvent, FlowNavigationFinishEvent), TypeScript support (API 66.0 GA), LWC in Dashboards (Beta), and Agentforce discoverability.
-
-**Flow Screen quick reference**: `@api` inputs → `FlowAttributeChangeEvent` outputs → `FlowNavigationFinishEvent` for navigation. See also [references/flow-integration-guide.md](references/flow-integration-guide.md).
-
----
-
-## Form Building Context
-
-LWC is the **only form-building option with Jest unit testing**. For forms requiring automated test coverage or CI/CD validation, prefer LWC over Screen Flows or Dynamic Forms.
-
-**Complexity spectrum**: Dynamic Forms < Screen Flow < OmniStudio < Screen Flow + LWC < Full LWC
-
-Choose the simplest tool that meets requirements — don't default to LWC when Screen Flow suffices. See [sf-flow/references/form-building-guide.md](../sf-flow/references/form-building-guide.md) for the 5-tool comparison and decision tree.
-
----
-
-## CLI Commands
-
-| Command | Purpose |
-|---------|---------|
-| `sf template generate lightning component --type lwc` | Create new LWC |
-| `sf template generate flexipage --name MyPage --template DefaultAppPage` | Generate FlexiPage metadata |
-| `sf force lightning lwc test run` | Run Jest tests |
-| `sf force lightning lwc test run --watch` | Watch mode |
-| `sf project deploy start -m LightningComponentBundle` | Deploy LWC |
-
-```bash
-# Generate new component
-sf template generate lightning component \
-  --name accountDashboard \
-  --type lwc \
-  --output-dir force-app/main/default/lwc
-
-# Run tests with coverage
-sf force lightning lwc test run -- --coverage
-
-# Specific component tests
-sf force lightning lwc test run --spec force-app/main/default/lwc/accountList/__tests__
+```text
+LWC work: <summary>
+Pattern: <wire / apex / graphql / lms / flow-screen>
+Files: <paths>
+Quality: <a11y, SLDS2, dark mode, Jest>
+Next step: <deploy, add controller, or run tests>
 ```
 
 ---
 
 ## Cross-Skill Integration
 
-| Skill | Use Case |
-|-------|----------|
-| sf-apex | Generate Apex controllers (`@AuraEnabled`, `@InvocableMethod`) |
-| sf-flow | Embed components in Flow Screens, pass data to/from Flow |
-| sf-testing | Generate Jest tests |
-| sf-deploy | Deploy components |
-| sf-metadata | Create message channels |
+| Need | Delegate to | Reason |
+|---|---|---|
+| Apex controller or service | [sf-apex](../sf-apex/SKILL.md) | backend logic |
+| embed in Flow screens | [sf-flow](../sf-flow/SKILL.md) | declarative orchestration |
+| deploy component bundle | [sf-deploy](../sf-deploy/SKILL.md) | org rollout |
+| create metadata like message channels | [sf-metadata](../sf-metadata/SKILL.md) | supporting metadata |
 
 ---
 
-## Dependencies
+## Reference Map
 
-**Required**: Target org with LWC support (API 45.0+), `sf` CLI authenticated
-**For Testing**: Node.js 18+, Jest (`@salesforce/sfdx-lwc-jest`)
-**For SLDS Validation**: `@salesforce-ux/slds-linter` (optional)
+### Start here
+- [references/component-patterns.md](references/component-patterns.md)
+- [references/lwc-best-practices.md](references/lwc-best-practices.md)
+- [references/scoring-and-testing.md](references/scoring-and-testing.md)
+- [references/jest-testing.md](references/jest-testing.md)
+
+### Accessibility / performance / state
+- [references/accessibility-guide.md](references/accessibility-guide.md)
+- [references/performance-guide.md](references/performance-guide.md)
+- [references/state-management.md](references/state-management.md)
+- [references/template-anti-patterns.md](references/template-anti-patterns.md)
+
+### Integration / advanced features
+- [references/lms-guide.md](references/lms-guide.md)
+- [references/flow-integration-guide.md](references/flow-integration-guide.md)
+- [references/advanced-features.md](references/advanced-features.md)
+- [references/async-notification-patterns.md](references/async-notification-patterns.md)
+- [references/triangle-pattern.md](references/triangle-pattern.md)
+- [assets/](assets/)
 
 ---
 
-## External References
+## Score Guide
 
-- [PICKLES Framework (Salesforce Ben)](https://www.salesforceben.com/the-ideal-framework-for-architecting-salesforce-lightning-web-components/)
-- [LWC Recipes (GitHub)](https://github.com/trailheadapps/lwc-recipes)
-- [SLDS 2 Transition Guide](https://www.lightningdesignsystem.com/2e1ef8501/p/8184ad-transition-to-slds-2)
-- [James Simone - Advanced Jest Testing](https://www.jamessimone.net/blog/joys-of-apex/advanced-lwc-jest-testing/)
+| Score | Meaning |
+|---|---|
+| 150+ | production-ready LWC bundle |
+| 125–149 | strong component with minor polish left |
+| 100–124 | functional but review recommended |
+| < 100 | needs significant improvement |

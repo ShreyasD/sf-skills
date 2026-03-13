@@ -42,6 +42,17 @@ Delegate elsewhere when the user is:
 
 ---
 
+## Required Context to Gather First
+
+Ask for or infer:
+- agent purpose and whether Agent Script is truly the right fit
+- Service Agent vs Employee Agent
+- target org and publish intent
+- expected actions / targets (Flow, Apex, PromptTemplate, etc.)
+- whether the request is authoring, validation, preview, or publish troubleshooting
+
+---
+
 ## Activation Checklist
 
 Before you author or fix any `.agent` file, verify these first:
@@ -107,6 +118,8 @@ Canonical rule set: [references/syntax-reference.md](references/syntax-reference
 
 ---
 
+## Recommended Workflow
+
 ## Recommended Authoring Workflow
 
 ### Phase 1 — design the agent
@@ -161,6 +174,8 @@ These execute as code, not suggestions:
 See [references/instruction-resolution.md](references/instruction-resolution.md) and [references/architecture-patterns.md](references/architecture-patterns.md).
 
 ---
+
+## Cross-Skill Integration
 
 ## Cross-Skill Orchestration
 

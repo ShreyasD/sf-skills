@@ -37,6 +37,17 @@ Do **not** use it for:
 
 ---
 
+## Required Context to Gather First
+
+Ask for or infer:
+- whether this is a Builder / Setup UI project or a code-first Agent Script project
+- agent type: Service Agent or Employee Agent
+- whether the work targets topics, actions, PromptTemplates, Models API, or custom Lightning types
+- what supporting Flow / Apex / metadata dependencies already exist
+- whether the user needs authoring help, publish help, or troubleshooting
+
+---
+
 ## Two Agentforce Paths
 
 | Path | Skill | Best fit |
@@ -47,6 +58,8 @@ Do **not** use it for:
 If the user is starting from scratch and wants strong control over flow/state, route to Agent Script.
 
 ---
+
+## Recommended Workflow
 
 ## Builder Workflow Summary
 
@@ -115,6 +128,8 @@ Use when the action needs richer structured input or output presentation.
 Expanded reference: [references/metadata-reference.md](references/metadata-reference.md)
 
 ---
+
+## Cross-Skill Integration
 
 ## Recommended Orchestration Order
 
