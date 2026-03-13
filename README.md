@@ -7,6 +7,15 @@
 
 A collection of reusable skills for **Agentic Salesforce Development**, enabling AI-powered code generation, validation, testing, debugging, and deployment. Compatible with any AI coding agent via the [Agent Skills open standard](https://agentskills.io).
 
+**What you get:** 19 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
+
+### Recent Highlights
+
+- **Agent Script validator expansion** — stable `ASV-*` rule IDs, rule catalog docs, and profile-aware asset validation
+- **Observability trace tooling** — Builder trace capture and `trace-test` workflows in `sf-ai-agentforce-observability`
+- **Installer maturity** — native `~/.claude/` layout, profile management, diagnostics, cleanup, and Windows-compatible hook support
+- **Claude Code full experience** — 7-agent team, org preflight, LSP prewarm, validator dispatcher, and cross-skill guardrails
+
 ---
 
 ## ✨ Available Skills
@@ -38,7 +47,7 @@ A collection of reusable skills for **Agentic Salesforce Development**, enabling
 
 - **[sf-ai-agentscript](skills/sf-ai-agentscript/)** — Agent Script DSL, FSM patterns
 - **[sf-ai-agentforce-persona](skills/sf-ai-agentforce-persona/)** — Deep persona design, identity framework, Agent Builder encoding
-- **[sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/)** — Session tracing (Data Cloud)
+- **[sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/)** — STDM + Builder trace capture, trace-test workflows, session analysis
 - **[sf-ai-agentforce-testing](skills/sf-ai-agentforce-testing/)** — Agent test specs, agentic fix loops
 - **[sf-ai-agentforce](skills/sf-ai-agentforce/)** — Agent Builder, PromptTemplate, Models API
 
@@ -87,6 +96,14 @@ The strategist spawns up to 4 concurrent workers via `Task()`. PS agents have `W
 
 ## 🚀 Installation
 
+### Choose Your Path
+
+| If you want... | Use this | Best for |
+|---|---|---|
+| Skills only, any supported coding agent | `npx skills add Jaganpro/sf-skills` | Codex, Gemini CLI, OpenCode, Amp, Claude Code without local hooks |
+| Full Claude Code experience | `curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash` | Hooks, agents, LSP, guardrails, org preflight |
+| Manual / Windows / CI-friendly install | `curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3` | Direct installer control without bash wrapper |
+
 ### Any AI Coding Agent
 
 > Requires [Node.js 18+](https://nodejs.org/) (provides the `npx` command)
@@ -107,15 +124,27 @@ npx skills add Jaganpro/sf-skills --list
 
 ### Claude Code (Full Experience)
 
-> **Using Claude Code?** This path is recommended — npx installs skills only, while install.py adds hooks, agents, LSP, and guardrails.
+> **Using Claude Code?** This path is recommended — `npx` installs skills only, while the installer adds the full local experience: skills + agents + hooks + LSP + guardrails.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-Adds 19 skills + 7 agents + 11 hook scripts + LSP engine. Includes guardrails, auto-validation on Write/Edit, and org preflight checks.
+This installs 19 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures guardrails, auto-validation on Write/Edit, org preflight checks, and background LSP prewarm.
 
 **Restart Claude Code** after installation.
+
+### Direct Python Installer (manual / Windows / CI)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py | python3
+```
+
+Use this path when you want to:
+- review installer output directly
+- run on Windows without the bash wrapper
+- script installs in CI or managed environments
+- access advanced installer commands immediately
 
 ### Updating
 
@@ -127,14 +156,27 @@ Adds 19 skills + 7 agents + 11 hook scripts + LSP engine. Includes guardrails, a
 ### Managing install.py
 
 ```bash
-python3 ~/.claude/sf-skills-install.py --status       # Check version
-python3 ~/.claude/sf-skills-install.py --update        # Update to latest
-python3 ~/.claude/sf-skills-install.py --uninstall     # Remove everything
-python3 ~/.claude/sf-skills-install.py --cleanup       # Clean legacy artifacts
-python3 ~/.claude/sf-skills-install.py --dry-run       # Preview without applying
+python3 ~/.claude/sf-skills-install.py --status            # Check version and install state
+python3 ~/.claude/sf-skills-install.py --update            # Update to latest
+python3 ~/.claude/sf-skills-install.py --force-update      # Reinstall even if already current
+python3 ~/.claude/sf-skills-install.py --diagnose          # Run installer diagnostics
+python3 ~/.claude/sf-skills-install.py --restore-settings  # Restore settings.json from backup
+python3 ~/.claude/sf-skills-install.py --cleanup           # Clean legacy artifacts
+python3 ~/.claude/sf-skills-install.py --uninstall         # Remove everything installed by sf-skills
+python3 ~/.claude/sf-skills-install.py --dry-run           # Preview without applying
 ```
 
-> **Upgrading from npx to install.py?** Just run the curl command above — it auto-detects and migrates.
+### Installer Profiles
+
+```bash
+python3 ~/.claude/sf-skills-install.py --profile list
+python3 ~/.claude/sf-skills-install.py --profile save personal
+python3 ~/.claude/sf-skills-install.py --profile use enterprise
+python3 ~/.claude/sf-skills-install.py --profile show enterprise
+python3 ~/.claude/sf-skills-install.py --profile delete old
+```
+
+> **Upgrading from `npx` to install.py?** Just run the installer command above — it auto-detects and migrates.
 
 ### What Gets Installed (install.py only)
 
@@ -148,7 +190,7 @@ python3 ~/.claude/sf-skills-install.py --dry-run       # Preview without applyin
 │   ├── fde-strategist.md
 │   ├── fde-engineer.md
 │   └── ... (5 more)
-├── hooks/                     # 11 hook scripts
+├── hooks/                     # Shared hook system and registry
 │   ├── scripts/
 │   └── skills-registry.json
 ├── lsp-engine/                # LSP wrappers (Apex, LWC, AgentScript)
@@ -156,14 +198,15 @@ python3 ~/.claude/sf-skills-install.py --dry-run       # Preview without applyin
 └── sf-skills-install.py       # Installer for updates
 ```
 
-**What hooks provide:**
+**Active hook lifecycle:**
 
-| Hook | Function |
+| Event | What it does |
 |------|----------|
-| **SessionStart** | Initializes session, preflights org connection, warms LSP servers |
-| **PreToolUse** | Guardrails — blocks dangerous DML, auto-fixes unbounded SOQL |
-| **PostToolUse** | Validates Apex/Flow/LWC on save |
-| **PermissionRequest** | Auto-approves safe operations (read queries, scratch deploys) |
+| **SessionStart** | Session init, org preflight, LSP prewarm |
+| **PreToolUse** | Guardrails + API version checks before Bash / Salesforce tool usage |
+| **PostToolUse** | Validator dispatcher for file-aware checks after Write/Edit |
+
+For deeper install and hook internals, see [tools/README.md](tools/README.md) and [shared/hooks/README.md](shared/hooks/README.md).
 
 ## 🎬 Video Tutorials
 
@@ -187,11 +230,11 @@ Use the sf-deploy skill: "Deploy to [org]"
 
 </details>
 
-## 🔌 Plugin Features
+## ⚙️ Claude Code Features
 
 ### 💡 Auto-Activation
 
-Skills are available as slash commands (e.g., `/sf-apex`, `/sf-flow`). Claude dynamically selects the appropriate skill based on your request context — keywords, intent, and file patterns in `shared/hooks/skills-registry.json` serve as documentation for skill capabilities.
+Skills are available as slash commands (for example `/sf-apex`, `/sf-flow`, `/sf-ai-agentscript`). Claude can also select the appropriate skill dynamically from your request context — keywords, intent, and file patterns in `shared/hooks/skills-registry.json` document what each skill is best at.
 
 ---
 
@@ -210,7 +253,7 @@ Each skill includes validation hooks that run automatically on **Write** and **E
 | 🐛 | sf-debug | Debug logs | 90-pt scoring + governor analysis |
 | 📋 | sf-metadata | `*.object-meta.xml`, `*.field-meta.xml`, `*.permissionset-meta.xml` | Metadata best practices |
 | 💾 | sf-data | `*.apex`, `*.soql` | SOQL patterns + Live Query Plan |
-| 🤖 | sf-ai-agentscript | `*.agent` | Agent Script syntax + LSP auto-fix |
+| 🤖 | sf-ai-agentscript | `*.agent` | Agent Script syntax, `ASV-*` rule checks, org-aware validation + LSP auto-fix |
 | 🧪 | sf-ai-agentforce-testing | Test spec YAML | 100-pt scoring + fix loops |
 | 🔐 | sf-connected-apps | `*.connectedApp-meta.xml` | OAuth security validation |
 | 🔗 | sf-integration | `*.namedCredential-meta.xml` | 120-pt scoring + callout patterns |
@@ -290,7 +333,7 @@ Skills integrate with Salesforce's **REST API explain endpoint** to provide real
 
 </details>
 
-#### 🔤 Language Server Protocol (LSP) Integration
+### 🔤 Language Server Protocol (LSP) Integration
 
 Skills leverage official Salesforce LSP servers for real-time syntax validation with auto-fix loops:
 
@@ -312,21 +355,27 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 
 ## 🔧 Prerequisites
 
-**Required:**
+### Cross-CLI minimum
+
+- **Node.js 18+** — required for `npx skills add`
+
+### Claude Code full install
+
 - **Claude Code** (latest version)
 - **Salesforce CLI** v2.x (`sf` command) — `npm install -g @salesforce/cli`
-- **Python 3.10+** (for validation hooks)
+- **Python 3.10+** — for hooks, validation, and installer tooling
 - **Authenticated Salesforce Org** — DevHub, Sandbox, or Scratch Org
-- **sfdx-project.json** — Standard DX project structure
+- **sfdx-project.json** — standard DX project structure
 
-**API Version Requirements:**
+### API Version Requirements
+
 | Skills | Minimum API | Notes |
 |--------|-------------|-------|
 | Most skills | **62.0** (Winter '25) | sf-apex, sf-flow, sf-lwc, sf-metadata |
 | sf-connected-apps, sf-integration | **61.0** | External Client Apps |
 | sf-ai-agentforce | **66.0** (Spring '26) | Full agent deployment, GenAiPlannerBundle |
 
-**Optional** (enables additional features):
+### Optional dependencies (enable richer validation / LSP features)
 
 *Code Analyzer V5 engines:*
 - **Java 11+** — Enables PMD, CPD, SFGE engines (`brew install openjdk@11`)
@@ -454,6 +503,13 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 "Generate a PromptTemplate for case summaries"
 ```
 
+### 📈 Agent Observability & Trace Analysis
+```
+"Capture Builder traces for this agent test run and summarize routing issues"
+"Analyze this Agentforce session trace for topic/action drift"
+"Run trace-test against my agent and suggest Agent Script fixes"
+```
+
 ### 📊 Diagrams & Documentation
 ```
 "Create a JWT Bearer OAuth flow diagram"
@@ -467,11 +523,6 @@ Hooks provide **advisory feedback** — they inform but don't block operations.
 ```
 "Deploy my Apex classes to sandbox with tests"
 "Validate my metadata changes before deploying to production"
-```
-
-### 🛠️ Skill Creation
-```
-"Create a new Claude Code skill for code analysis"
 ```
 
 </details>
@@ -508,7 +559,7 @@ sf-industry-{name}        # Industries (healthcare, finserv)
 |--|-------|-------------|--------|
 | 🤖 | `sf-ai-agentforce` | Agent Builder, PromptTemplate, Models API, GenAi metadata | ✅ Live |
 | 🧪 | `sf-ai-agentforce-testing` | Agent test specs, agentic fix loops | ✅ Live |
-| 📈 | `sf-ai-agentforce-observability` | Session tracing extraction & analysis (Data Cloud) | ✅ Live |
+| 📈 | `sf-ai-agentforce-observability` | STDM + Builder trace capture, trace-test, and execution analysis | ✅ Live |
 | 📝 | `sf-ai-agentscript` | Agent Script DSL, FSM patterns, 100-pt scoring | ✅ Live |
 | 💬 | `sf-ai-agentforce-persona` | Deep persona design, identity framework, Agent Builder encoding | ✅ Live |
 | 🧠 | `sf-ai-copilot` | Einstein Copilot, Prompts | 📋 Planned |
