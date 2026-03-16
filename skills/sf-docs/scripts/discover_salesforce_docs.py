@@ -218,6 +218,7 @@ def main() -> int:
     args = parse_args()
     seed = load_seed(args.seed)
     manifest = build_manifest(seed, verify_pdf=args.verify_pdf)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.pretty:
         args.output.write_text(json.dumps(manifest, indent=2) + "\n")
     else:

@@ -143,6 +143,7 @@ def main() -> int:
         },
         'results': [run_case(case, args.manifest.expanduser(), args.corpus_root.expanduser(), args.live_scrape) for case in benchmark.get('cases', [])],
     }
+    args.results.parent.mkdir(parents=True, exist_ok=True)
     args.results.write_text(json.dumps(out, indent=2) + '\n')
     print(f'Wrote benchmark results: {args.results}')
     print(f"Cases: {len(out['results'])}")

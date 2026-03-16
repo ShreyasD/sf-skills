@@ -28,24 +28,31 @@ Official Salesforce documentation retrieval skill for `sf-skills`.
 - prefer official URLs and PDFs over third-party summaries
 - avoid broad crawling during normal question answering
 
-## Key References
+## Quick Start
 
-- [SKILL.md](./SKILL.md)
-- [references/local-corpus-layout.md](./references/local-corpus-layout.md)
-- [references/discovery-manifest.md](./references/discovery-manifest.md)
-- [references/qmd-integration.md](./references/qmd-integration.md)
-- [references/runtime-workflow.md](./references/runtime-workflow.md)
-- [references/ingestion-workflow.md](./references/ingestion-workflow.md)
-- [references/salesforce-scraper-techniques.md](./references/salesforce-scraper-techniques.md)
-- [references/pilot-scope.md](./references/pilot-scope.md)
-- [references/benchmark-protocol.md](./references/benchmark-protocol.md)
-- [references/cli-workflow.md](./references/cli-workflow.md)
+### Prerequisites
 
-## Unified CLI
+- Python 3.10+
+- qmd (optional — enables faster local search; without it, the skill uses Salesforce-aware scraping fallback)
 
-Use the wrapper CLI for the common end-to-end workflow:
+### Try it now (no setup required)
 
-### Discover / enrich the manifest
+Test sf-docs immediately without any corpus setup:
+
+```bash
+python3 skills/sf-docs/scripts/cli.py retrieve \
+  --query "System.StubProvider" \
+  --mode no_qmd \
+  --live-scrape
+```
+
+### Full local corpus setup
+
+The pilot corpus covers 7 guides: Apex Developer Guide, Apex Reference,
+REST API, Metadata API, Object Reference, LWC, and Agentforce.
+See [references/pilot-scope.md](./references/pilot-scope.md) for details.
+
+#### 1. Discover guides
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py discover \
@@ -53,22 +60,34 @@ python3 skills/sf-docs/scripts/cli.py discover \
   --pretty
 ```
 
-### Sync a local corpus from the manifest
+Verify: `~/.sf-docs/manifest/guides.json` exists with 7 guides.
+
+#### 2. Sync corpus
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py sync \
-  --manifest ~/.sf-docs/manifest/guides.json \
   --download-pdf \
-  --download-html \
-  --browser-scrape \
   --normalize
 ```
 
-### Bootstrap qmd for the local corpus
+Verify: `~/.sf-docs/normalized/md/` contains guide folders (e.g. `apexcode/`, `api_rest/`).
+
+#### 3. Bootstrap qmd (optional)
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py bootstrap-qmd --embed
 ```
+
+Verify: `python3 skills/sf-docs/scripts/cli.py status` shows qmd collection indexed.
+
+#### 4. Test retrieval
+
+```bash
+python3 skills/sf-docs/scripts/cli.py retrieve \
+  --query "Find official Salesforce REST API authentication docs"
+```
+
+## CLI Reference
 
 ### Check qmd/corpus status
 
@@ -83,7 +102,7 @@ python3 skills/sf-docs/scripts/cli.py diagnose \
   --query "Find official Salesforce REST API authentication docs"
 ```
 
-### Run end-to-end retrieval
+### Run end-to-end retrieval (qmd-first mode)
 
 ```bash
 python3 skills/sf-docs/scripts/cli.py retrieve \
@@ -124,3 +143,16 @@ python3 skills/sf-docs/scripts/cli.py score-benchmark \
 ```
 
 > See [references/cli-workflow.md](./references/cli-workflow.md) for the recommended operator sequence.
+
+## Key References
+
+- [SKILL.md](./SKILL.md)
+- [references/local-corpus-layout.md](./references/local-corpus-layout.md)
+- [references/discovery-manifest.md](./references/discovery-manifest.md)
+- [references/qmd-integration.md](./references/qmd-integration.md)
+- [references/runtime-workflow.md](./references/runtime-workflow.md)
+- [references/ingestion-workflow.md](./references/ingestion-workflow.md)
+- [references/salesforce-scraper-techniques.md](./references/salesforce-scraper-techniques.md)
+- [references/pilot-scope.md](./references/pilot-scope.md)
+- [references/benchmark-protocol.md](./references/benchmark-protocol.md)
+- [references/cli-workflow.md](./references/cli-workflow.md)
