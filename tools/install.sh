@@ -597,7 +597,7 @@ show_next_steps() {
     echo "     In Claude Code, type: /sf-apex"
     echo ""
     echo -e "  3. ${BOLD}Use sf-docs for official documentation lookup${NC}"
-    echo "     sf-docs will use local corpus artifacts when available, then Salesforce-aware scraping and official PDF fallback"
+    echo "     sf-docs provides guidance for extracting official Salesforce docs online, especially from hard-to-fetch Help pages"
     echo ""
 
     if [[ "$env_type" == "enterprise" ]]; then

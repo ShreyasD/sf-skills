@@ -562,7 +562,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🧪 | `sf-testing` | Test execution, coverage, bulk testing | ✅ Live |
 | 🐛 | `sf-debug` | Debug log analysis, governor fixes | ✅ Live |
 | 📸 | `sf-diagram-nanobananapro` | Visual ERD, LWC mockups, Gemini sub-agent | ✅ Live |
-| 📚 | `sf-docs` | Official Salesforce docs retrieval, local-first corpus lookup + Salesforce-aware fallback | ✅ Live |
+| 📚 | `sf-docs` | Official Salesforce docs retrieval guidance for hard-to-fetch online Salesforce documentation | ✅ Live |
 | 🔐 | `sf-permissions` | Permission Set analysis, hierarchy viewer, "Who has X?" | ✅ Live |
 | 🔒 | `sf-security` | Sharing rules, org-wide defaults, encryption | 📋 Planned |
 | 📦 | `sf-migration` | Org-to-org, metadata comparison | 📋 Planned |

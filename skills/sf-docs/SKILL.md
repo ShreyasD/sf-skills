@@ -1,277 +1,196 @@
 ---
 name: sf-docs
 description: >
-  Official Salesforce documentation retrieval skill. Prefer locally synced
-  official Salesforce docs when available; otherwise use Salesforce-aware
-  scraping and guide/PDF discovery strategies for developer.salesforce.com and
-  help.salesforce.com.
+  Official Salesforce documentation retrieval guidance. Use when you need
+  authoritative Salesforce docs from developer.salesforce.com or
+  help.salesforce.com, especially when pages are JS-heavy, shell-rendered, or
+  hard to extract with naive fetching.
 license: MIT
 metadata:
-  version: "0.2.0"
+  version: "0.4.0"
   author: "Jag Valaiyapathy"
 ---
 
-# sf-docs: Salesforce Documentation Retrieval & Grounding
+# sf-docs
 
-Expert Salesforce documentation researcher focused on **official sources**. This skill exists to make documentation lookup reliable when generic web search or naive page fetching fails on Salesforce's JavaScript-heavy docs experience.
+Use this skill to retrieve and ground answers in **official Salesforce documentation on the public web**.
 
-`sf-docs` is a **core sf-skills capability**. It should always be installed with the skill suite.
+This skill is intentionally simple:
+- **no local corpus**
+- **no indexing**
+- **no benchmark workflow**
+- **no helper CLI dependency**
+- **no PDF fallback**
 
-## Core Responsibilities
+Its job is to provide a **reliable online retrieval playbook** for Salesforce docs that are hard to fetch, especially `help.salesforce.com` and JS-heavy `developer.salesforce.com` pages.
 
-1. **Official Docs Retrieval**: Find authoritative answers from Salesforce documentation first
-2. **Local Corpus Usage**: Prefer locally synced official docs artifacts when they are available and relevant
-3. **Salesforce-Aware Fallback**: Use Salesforce-specific retrieval patterns instead of naive generic web fetch
-4. **Source Grounding**: Return answers with exact source URLs, guide names, and retrieval notes
-5. **Cross-Skill Support**: Serve as the documentation lookup layer for other `sf-*` skills
+## Core Goal
 
----
+Find the best official Salesforce HTML page online and extract enough real content to answer confidently.
 
-## Runtime States
+If the evidence is weak, say so clearly instead of forcing a weak answer.
 
-### State A: Local-First
+## When to Use
 
-Use this state when a local `sf-docs` corpus exists under `~/.sf-docs/` and contains normalized markdown or other synced artifacts.
+Use `sf-docs` when a user asks for:
+- official Salesforce documentation
+- Apex, API, LWC, metadata, Agentforce, setup, or help articles
+- docs from `developer.salesforce.com`
+- docs from `help.salesforce.com`
+- pages that look JS-heavy, shell-rendered, or difficult to read with ordinary fetches
 
-**Preferred flow:**
-1. Detect local corpus readiness
-2. Identify the most likely Salesforce guide family
-3. Check the most relevant local artifacts first
-4. Accept local evidence only when the requested identifiers/terms are actually present
-5. Fall back to Salesforce-aware retrieval when local artifacts are weak or missing
+## Official Sources Only
 
-### State B: Salesforce-Aware Retrieval
+Prefer Salesforce-owned documentation sources:
+- `developer.salesforce.com`
+- `help.salesforce.com`
 
-Use this state when no useful local corpus exists or when local artifacts do not answer the question confidently.
+Avoid third-party blogs, videos, or summary articles unless the user explicitly asks for them.
 
-**Preferred flow:**
-1. Identify the most likely Salesforce doc family
-2. Use Salesforce-aware discovery and retrieval patterns
-3. Prefer official URLs over summaries from third-party blogs
-4. Fall back to official PDFs when web pages are unstable or shell-rendered
-5. Return grounded findings with source links and any uncertainty called out
+Do **not** fall back to PDFs.
 
-**Claude Code operator shortcut:**
-When the local `sf-docs` helper scripts are installed, prefer the built-in retrieval command over ad-hoc search-engine probing:
+## Retrieval Workflow
 
-```bash
-python3 ~/.claude/skills/sf-docs/scripts/cli.py retrieve           --query "<user question>"           --mode salesforce_aware           --live-scrape
-```
+### 1. Classify the request first
 
-For hard `help.salesforce.com` questions, this command applies the local Salesforce-aware retrieval flow, including targeted Help article discovery and browser-based rendering.
+Before fetching anything, identify the likely doc family.
 
-### Runtime Detection
+| Family | Typical Source | Use For |
+|---|---|---|
+| Developer docs | `developer.salesforce.com/docs/...` | Apex, APIs, LWC, metadata, Agentforce developer docs |
+| Help docs | `help.salesforce.com/...` | setup, admin, product configuration |
+| Legacy atlas docs | `developer.salesforce.com/docs/atlas.en-us.*` | older official guide and reference docs |
 
-`sf-docs` should detect **local corpus readiness at runtime**, not rely on installer choices.
+### 2. Identify the exact concept
 
-Use this detection order:
-1. Check whether a local Salesforce docs corpus exists
-2. Check whether normalized markdown artifacts exist under the corpus root
-3. If the local corpus is populated, use **local-first state**
-4. Otherwise, use **Salesforce-aware retrieval state**
+Extract the real target before you search:
+- exact API/class/method name
+- exact feature name
+- exact product phrase
+- exact setup concept
 
-> Reference: [references/local-corpus-layout.md](references/local-corpus-layout.md)
+Examples:
+- `Lightning Message Service`
+- `Wire Service`
+- `System.StubProvider`
+- `Agentforce Actions`
+- `Messaging for In-App and Web allowed domains`
 
----
+### 3. Prefer targeted official retrieval
 
-## Local Artifact Acceptance Rules
+Do **not** broad-crawl Salesforce docs.
 
-Treat local artifacts as **weak** and fall back when any of the following happen:
+Instead:
+1. identify the most likely official guide root or article
+2. if search is needed, restrict it to official Salesforce domains only
+3. fetch that official page
+4. check whether the **exact concept actually appears on the page**
+5. if not, inspect and follow the most relevant **1–3 official child links**
+6. stop once you have grounded evidence
 
-- No relevant local artifacts are available
-- The likely guide is clearly from the wrong Salesforce family or product area
-- The exact concept, API name, CLI command, or error term requested is missing
-- The local content is too fragmentary to answer confidently
-- The local corpus appears stale for an obviously release-sensitive question
+### 4. Do not stop at broad landing pages
 
-> **Rule**: Prefer a reliable Salesforce-specific fallback over confidently answering from a poor local hit.
+A guide landing page is **not enough** unless it clearly contains the exact requested concept.
 
----
+This is especially important for:
+- LWC docs
+- Agentforce docs
+- broad platform guide homepages
+- help landing pages that link to the real article
 
-## Salesforce Documentation Retrieval Playbook
+### 5. For `developer.salesforce.com`
 
-### 1. Identify the Doc Family First
+Use this playbook:
+- start with the most likely official guide root
+- if the page is JS-heavy, prefer browser-rendered extraction
+- check whether the exact concept appears on the page
+- if the concept is missing, inspect official child links and follow the best matching 1–3 links
+- prefer exact concept pages over broad guide roots
+- legacy atlas pages are valid if they are the real official reference for the concept
 
-Classify the request before searching:
+### 6. For `help.salesforce.com`
 
-| Family | Typical Sources | Use For |
-|--------|------------------|---------|
-| **Developer Docs** | `developer.salesforce.com/docs/...` | Apex, APIs, LWC, metadata, Agentforce developer docs |
-| **Salesforce Help** | `help.salesforce.com/...` | Setup UI steps, admin guides, feature configuration |
-| **Platform Guides** | `developer.salesforce.com/docs/platform/...` | Newer guide-style docs with cleaner URLs |
-| **Atlas / Legacy Guides** | `developer.salesforce.com/docs/atlas.en-us.*` | Older but still official guide and reference material |
-| **Official PDFs** | `resources.docs.salesforce.com/...pdf/...` | Large guide bundles, stable offline extraction |
+Help pages often fail with naive fetching.
 
-### 2. Prefer Exact Guide Paths Over Homepage Search
-
-Avoid stopping at broad pages like the docs homepage unless you are discovering guide roots.
-
-Instead, resolve toward:
-- A specific guide root
-- A specific article or page
-- A guide PDF when page-level retrieval is unstable
-
-### 3. Retrieval Patterns for `developer.salesforce.com`
-
-Use these patterns deliberately:
-
-- **Modern platform guide**: `developer.salesforce.com/docs/platform/...`
-- **Legacy Atlas guide**: `developer.salesforce.com/docs/atlas.en-us.<book>.meta/...`
-- **Guide PDF candidate**: derive `<book>` and try the matching official PDF URL
-
-When an HTML page fails because of JavaScript rendering, shell content, or soft errors, try:
-1. the guide root
-2. the legacy Atlas variant if known
-3. the official PDF
-
-### 4. Retrieval Patterns for `help.salesforce.com`
-
-Help pages often fail with generic web fetch because of client-side rendering and site chrome.
-
-Use this approach:
-- Prefer exact `help.salesforce.com/s/articleView?id=...` URLs or article identifiers when available
-- If you only have a product/topic query, start from a targeted official hub and discover linked Help articles from there
-  - Agentforce queries: start from the Agentforce developer guide and follow linked Help articles
-  - Messaging / Enhanced Web Chat queries: start from the Enhanced Web Chat docs or landing Help article, then follow one hop to child setup/security articles
-- Expect navigation shell noise and incomplete body extraction
-- Focus on retrieving the actual article body, not the rendered header/footer shell
-- Reject shell or soft-404 pages such as "We looked high and low but couldn't find that page"
-- Cross-check titles, product area, and article body before trusting a result
-
-### 5. PDFs Are a Valid Official Fallback
-
-Use PDFs when:
-- The guide has a stable official PDF
-- HTML extraction is inconsistent
-- A long-form developer guide is easier to search locally after normalization
-
-PDFs may be stored **locally** for reuse, but should **not** be committed into the public repo.
-
----
-
-## Answer Requirements
-
-When using `sf-docs`, answers should include:
-
-1. **Source type** — local normalized markdown, local scrape artifact, official HTML page, or official PDF
-2. **Guide/article name**
-3. **Exact official URL**
-4. **Any retrieval caveat** — for example, if browser scraping was needed or if the content appeared partially rendered
-
-If the evidence is weak, say so plainly.
-
----
-
-## Cross-Skill Integration
-
-| Skill | How `sf-docs` Helps |
-|-------|----------------------|
-| `sf-ai-agentforce` | Find Agentforce, PromptTemplate, Models API, and setup docs |
-| `sf-ai-agentscript` | Find Agent Script syntax, CLI, and reasoning engine docs |
-| `sf-apex` | Find Apex language and reference docs |
-| `sf-lwc` | Find LWC guides, component references, and wire docs |
-| `sf-integration` | Find REST, SOAP, Named Credential, and auth docs |
-| `sf-deploy` | Find CLI, deployment, packaging, and metadata references |
-
-**Delegation rule**: If another skill needs authoritative Salesforce documentation, it should use `sf-docs` as the retrieval layer rather than improvising generic web search.
-
----
-
-## Local Storage Policy
-
-- `sf-docs` is part of the core skill suite
-- There is **no external local index dependency**
-- Downloaded PDFs, scraped markdown, manifests, and diagnostics should live on the **user's machine**
-- Official Salesforce docs content should **not** be stored in this public Git repository
-
-### Default Local Corpus Layout
-
-Use a stable local root such as:
-
-```text
-~/.sf-docs/
-```
-
-Recommended structure:
-- `~/.sf-docs/manifest/` — discovery manifests and sync status
-- `~/.sf-docs/raw/pdf/` — downloaded official PDFs
-- `~/.sf-docs/raw/html/` — optional raw HTML captures and browser scrape payloads
-- `~/.sf-docs/normalized/md/` — canonical markdown corpus used for local-first retrieval
-- `~/.sf-docs/logs/` — optional diagnostics and fetch logs
-
-> Full reference: [references/local-corpus-layout.md](references/local-corpus-layout.md)
-
----
-
-## First-Version Behavior
-
-The initial implementation should optimize for correctness and operational simplicity:
-
-1. Local-first when a useful corpus exists
-2. Sequential fallback to Salesforce-aware retrieval
-3. Targeted retrieval, not broad crawling, during normal lookups
-4. Grounded responses with official source links
-
-### Query-Time Runtime Flow
-
-1. Detect local corpus availability
-2. Inspect the most likely local artifacts first
-3. Evaluate evidence quality
-4. On weak/missing evidence, use Salesforce-specific HTML/PDF fallback
-5. Answer with source grounding and retrieval caveats when needed
-
-> Full runtime guide: [references/runtime-workflow.md](references/runtime-workflow.md)
-
----
-
-## Success Criteria
-
-`sf-docs` is successful when it does the following better than generic web search:
-
-- Finds the right Salesforce page or PDF more often
-- Avoids failed fetches on `help.salesforce.com`
-- Reduces hallucinations by grounding on official sources
-- Improves the documentation quality available to the rest of the `sf-*` skills
-
----
-
-## References
-
-| Document | Purpose |
-|----------|---------|
-| [references/local-corpus-layout.md](references/local-corpus-layout.md) | Local-only corpus structure and runtime detection rules |
-| [references/discovery-manifest.md](references/discovery-manifest.md) | Guide discovery manifest schema, mixed doc family handling, and HTML vs PDF policy |
-| [references/local-retrieval.md](references/local-retrieval.md) | Local artifact retrieval strategy and acceptance rules |
-| [references/runtime-workflow.md](references/runtime-workflow.md) | Query-time flow, fallback rules, sync separation, and local persistence policy |
-| [references/ingestion-workflow.md](references/ingestion-workflow.md) | Targeted HTML/PDF fetch and normalization workflow |
-| [references/salesforce-scraper-techniques.md](references/salesforce-scraper-techniques.md) | Salesforce-aware browser extraction techniques, Shadow DOM handling, and PDF fallback rationale |
-| [references/pilot-scope.md](references/pilot-scope.md) | Initial guide scope for v1 ingestion |
-| [references/benchmark-protocol.md](references/benchmark-protocol.md) | Local-first benchmark and wrong-guide rejection protocol |
-| [references/cli-workflow.md](references/cli-workflow.md) | Unified CLI workflow for discover, sync, diagnose, retrieve, and benchmark scoring |
-| [references/implementation-order.md](references/implementation-order.md) | Recommended v1 execution order |
-| [references/final-architecture.md](references/final-architecture.md) | Final architectural recommendation |
-
-## Assets & Scripts
-
-| File | Purpose |
-|------|---------|
-| [assets/discovery-manifest.seed.json](assets/discovery-manifest.seed.json) | Starter guide manifest seed |
-| [assets/retrieval-benchmark.json](assets/retrieval-benchmark.json) | Expanded core retrieval benchmark cases for exact identifiers, guide routing, and evidence grounding |
-| [assets/retrieval-benchmark.results-template.json](assets/retrieval-benchmark.results-template.json) | Template for recording local-first benchmark outcomes |
-| [assets/retrieval-benchmark.robustness.json](assets/retrieval-benchmark.robustness.json) | Negative / wrong-guide rejection benchmark for hardening fallback behavior |
-| [assets/retrieval-benchmark.robustness.results-template.json](assets/retrieval-benchmark.robustness.results-template.json) | Template for recording robustness benchmark outcomes |
-| [scripts/cli.py](scripts/cli.py) | Unified sf-docs CLI for discover, sync, status, diagnose, retrieve, and benchmarking |
-| [scripts/discover_salesforce_docs.py](scripts/discover_salesforce_docs.py) | Enrich guide seeds into a discovery manifest and optionally verify PDF candidates |
-| [scripts/salesforce_dom_scraper.mjs](scripts/salesforce_dom_scraper.mjs) | Salesforce-aware browser scraper with Shadow DOM, legacy doc container, iframe, and help-page heuristics |
-| [scripts/sync_sf_docs.py](scripts/sync_sf_docs.py) | Fetch targeted HTML/PDF sources into the local corpus and normalize them into markdown |
-| [scripts/sf_docs_runtime.py](scripts/sf_docs_runtime.py) | Detect corpus readiness, build sequential lookup plans, and evaluate evidence quality |
-| [scripts/retrieve_sf_docs.py](scripts/retrieve_sf_docs.py) | End-to-end local-first retrieval execution with Salesforce-aware fallback |
-| [scripts/run_retrieval_benchmark.py](scripts/run_retrieval_benchmark.py) | Execute the benchmark cases through the local-first retrieval mode |
-| [scripts/score_retrieval_benchmark.py](scripts/score_retrieval_benchmark.py) | Score benchmark results |
-
----
-
-## License
-
-MIT License. See LICENSE file in the repo root.
-Copyright (c) 2024–2026 Jag Valaiyapathy
+Use this playbook:
+- prefer exact `articleView?id=...` URLs when available
+- use browser-rendered extraction when plain fetch returns shell content
+- treat outputs like `Loading`, `Sorry to interrupt`, `CSS Error`, or mostly chrome/navigation text as **failed extraction**, not evidence
+- look for the **real article body**, not just header, nav, or footer text
+- reject shell pages and soft-404 pages such as:
+  - "We looked high and low but couldn't find that page"
+  - generic empty help shells
+- if starting from a nearby guide or hub page, follow linked Help articles until you reach the real article body
+- if extraction still fails after targeted retries, return the best official Help URLs you found and explicitly say that article-body extraction was unsuccessful
+
+## Acceptance Rules
+
+A page is good enough to answer from only when at least one of these is true:
+- the exact identifier appears on the page
+- the exact concept phrase appears on the page
+- multiple query-specific phrases appear in the correct official context
+
+A page is **not** good enough when:
+- it is only a broad landing page
+- it is a shell page with little real article text
+- it is from the wrong product area
+- it does not contain the requested identifier or concept
+- it is a third-party explanation when an official page should exist
+
+## Rejection Rules
+
+Reject these as final evidence:
+- broad guide homepages without the exact concept
+- release notes when a concept/reference page is expected
+- admin blog posts when developer docs are requested
+- third-party blogs when official docs are available
+- shell-rendered pages with no real article body
+- pages whose titles sound right but whose body does not contain the requested concept
+
+## Grounding Requirements
+
+When answering, include:
+1. guide/article title
+2. exact official URL
+3. source type:
+   - developer doc page
+   - atlas reference page
+   - help article page
+4. any caveat if extraction was partial or browser-rendered
+
+If evidence is weak, say so plainly.
+
+## Examples
+
+### Example: Lightning Message Service
+Do **not** stop at the general LWC guide root.
+Find the exact LWC page for Lightning Message Service or follow the most relevant child links from the LWC docs until the exact concept appears.
+
+### Example: Wire Service
+Do **not** answer from the LWC homepage unless `Wire Service` is actually present there.
+Follow the relevant child doc page for wire service or wire adapters.
+
+### Example: Agentforce Actions
+Do **not** answer from a broad Agentforce landing page or a blog post.
+Find the official Agentforce developer page for actions, or follow the best matching child pages from the official Agentforce docs.
+
+### Example: Messaging for In-App and Web allowed domains
+Prefer official Help articles and browser-rendered extraction.
+Reject generic help shells. Follow linked Help articles from nearby official messaging docs if needed.
+
+### Example: System.StubProvider
+Prefer the official Salesforce reference/developer page where the exact identifier appears.
+Do not substitute a broader Apex landing page if the identifier is absent.
+
+## Non-Goals
+
+This skill should **not**:
+- maintain a local documentation corpus
+- rely on a local index
+- use PDF fallback
+- run benchmark workflows
+- depend on repo-specific scripts to be useful
+
+## Cross-Skill Role
+
+Other `sf-*` skills should use `sf-docs` when they need authoritative Salesforce documentation instead of relying on generic search alone.

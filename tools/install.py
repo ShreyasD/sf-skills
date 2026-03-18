@@ -2418,7 +2418,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
    Version:  {version}
    Skills:   ~/.claude/skills/sf-*/
    Hooks:    ~/.claude/hooks/
-   sf-docs:  local corpus + Salesforce-aware retrieval
+   sf-docs:  online Salesforce docs retrieval guidance
 """)
         else:
             # Full message when run directly
@@ -2430,7 +2430,7 @@ def cmd_install(dry_run: bool = False, force: bool = False, called_from_bash: bo
    Skills:   ~/.claude/skills/sf-*/
    Hooks:    ~/.claude/hooks/
    LSP:      ~/.claude/lsp-engine/
-   sf-docs:  local corpus + Salesforce-aware retrieval
+   sf-docs:  online Salesforce docs retrieval guidance
 
    🚀 Next steps:
    1. Restart Claude Code (or start new session)
@@ -2526,7 +2526,7 @@ def cmd_finalize_install(version: str, commit_sha: Optional[str] = None,
    Version:  {version}
    Skills:   ~/.claude/skills/sf-*/
    Hooks:    ~/.claude/hooks/
-   sf-docs:  local corpus + Salesforce-aware retrieval
+   sf-docs:  online Salesforce docs retrieval guidance
 """)
         else:
             print(f"""
@@ -2537,7 +2537,7 @@ def cmd_finalize_install(version: str, commit_sha: Optional[str] = None,
    Skills:   ~/.claude/skills/sf-*/
    Hooks:    ~/.claude/hooks/
    LSP:      ~/.claude/lsp-engine/
-   sf-docs:  local corpus + Salesforce-aware retrieval
+   sf-docs:  online Salesforce docs retrieval guidance
 
    🚀 Next steps:
    1. Restart Claude Code (or start new session)
@@ -2812,7 +2812,7 @@ def cmd_status() -> int:
         print(f"LSP count:   {c('⚠️ Not installed', Colors.YELLOW)}")
 
     # sf-docs retrieval mode
-    print(f"sf-docs:     {c('✓', Colors.GREEN)} local corpus + Salesforce-aware retrieval")
+    print(f"sf-docs:     {c('✓', Colors.GREEN)} online Salesforce docs retrieval guidance")
 
     # Check settings.json
     if SETTINGS_FILE.exists():
