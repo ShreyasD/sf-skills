@@ -54,16 +54,19 @@ USER_AGENT = (
     "Chrome/122.0.0.0 Safari/537.36"
 )
 
-SHELL_TOKENS = [
+STRONG_SHELL_TOKENS = [
     "loading",
     "sorry to interrupt",
     "css error",
     "enable javascript",
-    "sign in",
-    "cookie preferences",
     "we looked high and low",
     "couldn't find that page",
     "404 error",
+]
+
+WEAK_SHELL_TOKENS = [
+    "sign in",
+    "cookie preferences",
 ]
 
 NOISE_LINES = {
@@ -159,7 +162,11 @@ def cleanup_help_text(text: str, title: str = "") -> str:
 
 def looks_like_shell(title: str, text: str) -> bool:
     haystack = f"{title}\n{text}".lower()
-    return any(token in haystack for token in SHELL_TOKENS)
+    if any(token in haystack for token in STRONG_SHELL_TOKENS):
+        return True
+    if any(token in haystack for token in WEAK_SHELL_TOKENS):
+        return len(text.strip()) < 600
+    return False
 
 
 def _split_blocks(text: str) -> List[str]:

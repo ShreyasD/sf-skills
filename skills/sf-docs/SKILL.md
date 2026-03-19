@@ -22,12 +22,12 @@ This skill is intentionally simple:
 - **no helper CLI dependency**
 - **no PDF fallback**
 
-Its job is to provide a **reliable online retrieval playbook** for Salesforce docs that are hard to fetch, especially `help.salesforce.com`, JS-heavy `developer.salesforce.com`, and other official Salesforce-owned doc pages such as `architect.salesforce.com` and `admin.salesforce.com`.
+Its job is to provide a **reliable online retrieval playbook** for Salesforce docs that are hard to fetch, especially `help.salesforce.com`, JS-heavy `developer.salesforce.com`, Lightning Design System docs on `lightningdesignsystem.com`, and other official Salesforce-owned doc pages such as `architect.salesforce.com` and `admin.salesforce.com`.
 
 An optional wrapper script is available at:
 - `skills/sf-docs/scripts/extract_salesforce_doc.py`
 
-It automatically routes `help.salesforce.com` URLs into the dedicated Help extractor and supports other official `*.salesforce.com` documentation pages through a generic browser-rendered path. For bot-sensitive pages, it also supports best-effort optional stealth mode via `--stealth` when `playwright-stealth` is installed.
+It automatically routes `help.salesforce.com` URLs into the dedicated Help extractor and supports other official documentation pages such as `*.salesforce.com` and `lightningdesignsystem.com` through a generic browser-rendered path. For bot-sensitive pages, it also supports best-effort optional stealth mode via `--stealth` when `playwright-stealth` is installed.
 
 The dedicated Help extractor is also available directly at:
 - `skills/sf-docs/scripts/extract_help_salesforce.py`
@@ -54,7 +54,8 @@ Prefer Salesforce-owned documentation sources:
 - `help.salesforce.com`
 - `architect.salesforce.com`
 - `admin.salesforce.com`
-- other relevant official `*.salesforce.com` documentation pages when Salesforce uses them as the source of truth
+- `lightningdesignsystem.com`
+- other relevant official Salesforce documentation pages when Salesforce uses them as the source of truth
 
 Avoid third-party blogs, videos, or summary articles unless the user explicitly asks for them.
 
@@ -71,6 +72,7 @@ Before fetching anything, identify the likely doc family.
 | Developer docs | `developer.salesforce.com/docs/...` | Apex, APIs, LWC, metadata, Agentforce developer docs |
 | Help docs | `help.salesforce.com/...` | setup, admin, product configuration |
 | Architect/Admin docs | `architect.salesforce.com/...`, `admin.salesforce.com/...` | best practices, patterns, well-architected guidance, admin enablement |
+| Design system docs | `lightningdesignsystem.com/...` | SLDS, Cosmos, design tokens, component and styling guidance |
 | Legacy atlas docs | `developer.salesforce.com/docs/atlas.en-us.*` | older official guide and reference docs |
 
 ### 2. Identify the exact concept

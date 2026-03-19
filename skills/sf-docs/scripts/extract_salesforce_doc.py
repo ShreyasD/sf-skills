@@ -7,8 +7,8 @@ Behavior:
   Help extractor with shadow DOM heuristics.
 - Otherwise, use a lightweight browser-rendered extractor for official
   Salesforce-owned documentation sites such as developer.salesforce.com,
-  architect.salesforce.com, admin.salesforce.com, and other *.salesforce.com
-  hosts.
+  architect.salesforce.com, admin.salesforce.com, lightningdesignsystem.com,
+  and other supported official documentation hosts.
 
 Examples:
   python3 skills/sf-docs/scripts/extract_salesforce_doc.py \
@@ -58,17 +58,30 @@ USER_AGENT = (
     "Chrome/122.0.0.0 Safari/537.36"
 )
 
-SHELL_TOKENS = [
+STRONG_SHELL_TOKENS = [
     "loading",
     "sorry to interrupt",
     "css error",
     "enable javascript",
-    "sign in",
-    "cookie preferences",
     "we looked high and low",
     "couldn't find that page",
     "404 error",
 ]
+
+WEAK_SHELL_TOKENS = [
+    "sign in",
+    "cookie preferences",
+]
+
+OFFICIAL_DOC_EXACT_HOSTS = {
+    "salesforce.com",
+    "lightningdesignsystem.com",
+}
+
+OFFICIAL_DOC_SUFFIXES = (
+    ".salesforce.com",
+    ".lightningdesignsystem.com",
+)
 
 
 def normalize_text(text: str) -> str:
@@ -80,7 +93,11 @@ def normalize_text(text: str) -> str:
 
 def looks_like_shell(title: str, text: str) -> bool:
     haystack = f"{title}\n{text}".lower()
-    return any(token in haystack for token in SHELL_TOKENS)
+    if any(token in haystack for token in STRONG_SHELL_TOKENS):
+        return True
+    if any(token in haystack for token in WEAK_SHELL_TOKENS):
+        return len(text.strip()) < 600
+    return False
 
 
 def apply_stealth(page) -> bool:
@@ -110,7 +127,7 @@ def parse_args() -> argparse.Namespace:
 
 def is_official_salesforce_host(host: str) -> bool:
     host = (host or "").lower()
-    return host == "salesforce.com" or host.endswith(".salesforce.com")
+    return host in OFFICIAL_DOC_EXACT_HOSTS or any(host.endswith(suffix) for suffix in OFFICIAL_DOC_SUFFIXES)
 
 
 def route_kind(url: str) -> str:
