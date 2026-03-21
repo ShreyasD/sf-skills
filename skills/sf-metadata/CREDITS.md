@@ -30,6 +30,13 @@ Key contributions:
 - Security model architecture
 - Multi-tenant schema considerations
 
+### August Krys
+
+Key contributions:
+- corrections that strengthened automatic Permission Set / FLS follow-up for new custom metadata
+- emphasis that object permissions do not replace field-level visibility
+- practical guidance for eligible-field Permission Set generation
+
 ---
 
 ## Official Salesforce Resources

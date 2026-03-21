@@ -51,6 +51,13 @@ Key contributions:
 - Metadata API expertise
 - Salesforce DX foundations
 
+### August Krys
+
+Key contributions:
+- deployment workflow corrections discovered through hands-on build experience
+- clearer post-validation handoff guidance for permission assignment, test data, and smoke checks
+- stronger sequencing between metadata deployment and downstream data setup
+
 ---
 
 ## Tools & Frameworks

@@ -4,6 +4,15 @@
 
 Created by [Jag Valaiyapathy](https://github.com/Jaganpro)
 
+## Authors & Contributors
+
+### August Krys
+
+Key contributions:
+- corrections that drove the shift from legacy PromptTemplate guidance to current `GenAiPromptTemplate` guidance
+- updates to Prompt Builder metadata direction, including modern template structure and input-limit guidance
+- feedback on Builder-oriented agent authoring and supporting metadata sequencing
+
 ## References & Inspiration
 
 ### Official Salesforce Documentation

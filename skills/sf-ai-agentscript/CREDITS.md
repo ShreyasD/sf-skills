@@ -34,6 +34,7 @@ This skill was developed from comprehensive documentation screenshots covering 8
 |--------|-------------|
 | [aquivalabs/my-org-butler](https://github.com/aquivalabs/my-org-butler) | Official sources registry pattern, known-issues tracking structure, verification protocol, Builder UI → Agent Script migration guide, self-improvement protocol |
 | @kunello ([PR #20](https://github.com/Jaganpro/sf-skills/pull/20)) | Prompt template `"Input:fieldName"` binding syntax, context-aware description overrides, `{!@actions.X}` instruction reference patterns, callback behavior notes, error pattern catalog |
+| August Krys | Prompt metadata modernization follow-up, including consistency updates around `GenAiPromptTemplate`, published/active template readiness, and current prompt-template examples |
 | Hua Xu (Salesforce APAC FDE team) | "Open Gate" pattern: 3-variable state machine for auth-gated topic routing with LLM bypass and EXIT_PROTOCOL |
 | [trailheadapps/agent-script-recipes `.airules/AGENT_SCRIPT.md`](https://github.com/trailheadapps/agent-script-recipes) | Error prevention patterns: `@inputs` in `set` anti-pattern, bare action name detection, `run` vs utility action resolution. Contributors: [@pozil](https://github.com/pozil), [@msrivastav13](https://github.com/msrivastav13), [@muenzpraeger](https://github.com/muenzpraeger), [@albarivas](https://github.com/albarivas), [@charlesw-salesforce](https://github.com/charlesw-salesforce) |
 

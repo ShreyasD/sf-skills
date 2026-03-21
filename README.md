@@ -626,6 +626,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 | Contributor | Area | Skills |
 |---|---|---|
+| August Krys | Agentforce metadata modernization, metadata/FLS improvements, data/deploy workflow updates | sf-ai-agentforce, sf-ai-agentscript, sf-metadata, sf-data, sf-deploy |
 | [David Ryan (weytani)](https://github.com/weytani) | Industries Common Core | sf-industry-commoncore-omnistudio-analyze, sf-industry-commoncore-datamapper, sf-industry-commoncore-integration-procedure, sf-industry-commoncore-omniscript, sf-industry-commoncore-flexcard |
 
 ## Issues & Support

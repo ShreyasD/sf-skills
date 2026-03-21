@@ -31,6 +31,13 @@ Key contributions:
 - Bulk API usage patterns
 - Data loader best practices
 
+### August Krys
+
+Key contributions:
+- describe-first test-data workflow corrections
+- stronger pre-flight validation guidance for required fields, picklists, and createable fields
+- bounded retry and manual-fallback patterns for org data setup
+
 ---
 
 ## Official Salesforce Resources
