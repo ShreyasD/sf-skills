@@ -52,6 +52,8 @@ bash ~/.claude/skills/sf-datacloud/scripts/verify-plugin.sh
 bash ~/.claude/skills/sf-datacloud/scripts/verify-plugin.sh myorg
 ```
 
+`sf data360 doctor` is useful, but it is not the only readiness signal. On partially provisioned orgs it can fail even when other read-only Data Cloud commands still work. The helper script treats `doctor` as advisory and falls back to additional smoke checks.
+
 ## Output-noise tip
 
 When using linked community plugins, stderr can include warning noise. For normal usage, prefer:

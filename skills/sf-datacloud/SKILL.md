@@ -98,6 +98,8 @@ sf org display -o <alias>
 bash ~/.claude/skills/sf-datacloud/scripts/verify-plugin.sh <alias>
 ```
 
+Treat `sf data360 doctor` as a broad health signal, not the sole gate. On partially provisioned orgs it can fail even when read-only command families like connectors, DMOs, or segments still work.
+
 ### 2. Discover existing state before changing anything
 Use read-only inspection first:
 ```bash
@@ -149,6 +151,7 @@ Typical verification:
 - `dmo list` should usually use `--all`.
 - Segment creation may need `--api-version 64.0`.
 - `segment members` returns opaque IDs; use SQL joins for human-readable details.
+- `sf data360 doctor` can fail on partially provisioned orgs even when some read-only commands still work; fall back to targeted smoke checks.
 - Many long-running jobs are asynchronous in practice even when the command returns quickly.
 - Some Data Cloud operations still require UI setup outside the CLI runtime.
 

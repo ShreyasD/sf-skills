@@ -71,6 +71,8 @@ bash ~/.claude/skills/sf-datacloud/scripts/verify-plugin.sh
 bash ~/.claude/skills/sf-datacloud/scripts/verify-plugin.sh myorg
 ```
 
+The helper treats `sf data360 doctor` as advisory and falls back to additional read-only smoke checks when an org is only partially provisioned.
+
 ### 2. Bootstrap the plugin if needed
 
 ```bash
