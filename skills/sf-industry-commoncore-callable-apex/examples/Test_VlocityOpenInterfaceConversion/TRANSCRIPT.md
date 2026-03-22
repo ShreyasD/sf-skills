@@ -10,7 +10,7 @@ Convert `MyCustomVlocityOpenInterface2.cls` (VlocityOpenInterface) to System.Cal
 
 | Skill | Purpose |
 |-------|---------|
-| **sf-industries-callable-apex** | Migration pattern, response envelope, action dispatch, inputMap/options contract, test patterns |
+| **sf-industry-commoncore-callable-apex** | Migration pattern, response envelope, action dispatch, inputMap/options contract, test patterns |
 | **sf-apex** (implicit) | ApexDoc, type coercion, null safety, exception handling |
 
 ---

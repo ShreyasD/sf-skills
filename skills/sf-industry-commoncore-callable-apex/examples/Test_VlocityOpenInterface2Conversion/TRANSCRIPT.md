@@ -24,9 +24,9 @@ Convert a VlocityOpenInterface2 implementation (`MyCustomRemoteClass`) to `Syste
 
 ## Skills Applied
 
-### 1. **sf-industries-callable-apex** (Primary)
+### 1. **sf-industry-commoncore-callable-apex** (Primary)
 
-**Path:** `skills/sf-industries-callable-apex/SKILL.md`  
+**Path:** `skills/sf-industry-commoncore-callable-apex/SKILL.md`  
 **Trigger:** Callable implementations, VlocityOpenInterface, migration to System.Callable
 
 **Application:**

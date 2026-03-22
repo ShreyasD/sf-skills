@@ -12,9 +12,9 @@ Create a callable Apex class that finds all Quotes on an Account that have at le
 
 ## Skills Applied
 
-### 1. **sf-industries-callable-apex** (Primary)
+### 1. **sf-industry-commoncore-callable-apex** (Primary)
 
-**Path:** `~/.claude/skills/sf-industries-callable-apex/SKILL.md`  
+**Path:** `~/.claude/skills/sf-industry-commoncore-callable-apex/SKILL.md`  
 **Trigger:** Callable implementations, OmniStudio, Vlocity, Industries Apex extensions
 
 **Application:**

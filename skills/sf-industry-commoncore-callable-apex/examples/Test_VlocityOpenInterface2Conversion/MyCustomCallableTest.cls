@@ -1,7 +1,7 @@
 /**
- * @description Test class for MyCustomCallable.
+ * @description Test class for MyCustomCallable (converted from MyCustomRemoteClass VlocityOpenInterface2).
  *              Covers positive, negative, contract, and unsupported action scenarios.
- * @author      sf-industries-callable-apex
+ * @author      sf-industry-commoncore-callable-apex
  */
 @IsTest
 private class MyCustomCallableTest {
@@ -11,15 +11,15 @@ private class MyCustomCallableTest {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * @description Tests calculateTotal returns TotalAmount with inputMap/options format
+     * @description Tests calculateTotal returns total with inputMap/options format
      */
     @IsTest
     static void testCalculateTotal_Success() {
         System.Callable svc = new MyCustomCallable();
         Map<String, Object> args = new Map<String, Object>{
             'inputMap' => new Map<String, Object>{
-                'Price'    => 10.50,
-                'Quantity' => 3
+                'price'    => 10.50,
+                'quantity' => 3
             },
             'options'  => new Map<String, Object>()
         };
@@ -30,7 +30,7 @@ private class MyCustomCallableTest {
 
         Assert.isTrue((Boolean) result.get('success'), 'Should succeed');
         Map<String, Object> data = (Map<String, Object>) result.get('data');
-        Assert.areEqual(31.50, (Decimal) data.get('TotalAmount'), 'TotalAmount should be 10.50 * 3');
+        Assert.areEqual(31.50, (Decimal) data.get('total'), 'total should be 10.50 * 3');
     }
 
     /**
@@ -40,8 +40,8 @@ private class MyCustomCallableTest {
     static void testCalculateTotal_FlatArgs_Success() {
         System.Callable svc = new MyCustomCallable();
         Map<String, Object> args = new Map<String, Object>{
-            'Price'    => 100,
-            'Quantity' => 5
+            'price'    => 100,
+            'quantity' => 5
         };
 
         Test.startTest();
@@ -50,7 +50,7 @@ private class MyCustomCallableTest {
 
         Assert.isTrue((Boolean) result.get('success'), 'Should succeed');
         Map<String, Object> data = (Map<String, Object>) result.get('data');
-        Assert.areEqual(500, (Decimal) data.get('TotalAmount'), 'TotalAmount should be 100 * 5');
+        Assert.areEqual(500, (Decimal) data.get('total'), 'total should be 100 * 5');
     }
 
     /**
@@ -61,8 +61,8 @@ private class MyCustomCallableTest {
         System.Callable svc = new MyCustomCallable();
         Map<String, Object> args = new Map<String, Object>{
             'inputMap' => new Map<String, Object>{
-                'Price'    => '25.00',
-                'Quantity' => '4'
+                'price'    => '25.00',
+                'quantity' => '4'
             },
             'options'  => new Map<String, Object>()
         };
@@ -71,7 +71,7 @@ private class MyCustomCallableTest {
 
         Assert.isTrue((Boolean) result.get('success'), 'Should succeed');
         Map<String, Object> data = (Map<String, Object>) result.get('data');
-        Assert.areEqual(100, (Decimal) data.get('TotalAmount'), 'TotalAmount should be 25 * 4');
+        Assert.areEqual(100, (Decimal) data.get('total'), 'total should be 25 * 4');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -96,13 +96,13 @@ private class MyCustomCallableTest {
     }
 
     /**
-     * @description Tests missing Price returns error envelope
+     * @description Tests missing price returns error envelope
      */
     @IsTest
     static void testCalculateTotal_MissingPrice_ReturnsError() {
         System.Callable svc = new MyCustomCallable();
         Map<String, Object> args = new Map<String, Object>{
-            'inputMap' => new Map<String, Object>{ 'Quantity' => 2 },
+            'inputMap' => new Map<String, Object>{ 'quantity' => 2 },
             'options'  => new Map<String, Object>()
         };
 
@@ -112,6 +112,24 @@ private class MyCustomCallableTest {
         List<Object> errors = (List<Object>) result.get('errors');
         Assert.isNotNull(errors, 'errors should not be null');
         Assert.areEqual(1, errors.size(), 'Should have one error');
+    }
+
+    /**
+     * @description Tests missing quantity returns error envelope
+     */
+    @IsTest
+    static void testCalculateTotal_MissingQuantity_ReturnsError() {
+        System.Callable svc = new MyCustomCallable();
+        Map<String, Object> args = new Map<String, Object>{
+            'inputMap' => new Map<String, Object>{ 'price' => 50 },
+            'options'  => new Map<String, Object>()
+        };
+
+        Map<String, Object> result = (Map<String, Object>) svc.call('calculateTotal', args);
+
+        Assert.isFalse((Boolean) result.get('success'), 'Should fail');
+        List<Object> errors = (List<Object>) result.get('errors');
+        Assert.isNotNull(errors, 'errors should not be null');
     }
 
     /**

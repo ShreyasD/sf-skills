@@ -2,7 +2,7 @@
  * @description Industries callable that finds Quotes on an Account that have at least one
  *              QuoteLineItem with a specified Product2.ProductCode.
  *              Integrates with OmniStudio/Industries extension points.
- * @author      sf-industries-callable-apex
+ * @author      sf-industry-commoncore-callable-apex
  *
  * Actions:
  *   - findQuotesByProductCode: Returns Quotes for an Account with QuoteLineItems matching productCode

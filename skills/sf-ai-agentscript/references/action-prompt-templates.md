@@ -169,6 +169,8 @@ generate_summary: @actions.Generate_Order_Summary
 
 ---
 
+<a id="draft-template-publish-errors"></a>
+
 ## Draft Template Publish Errors (Critical)
 
 > **If your `generatePromptResponse://` action fails to publish, check the template status FIRST.** A Draft template produces a cascade of misleading errors — none of which mention the template status.

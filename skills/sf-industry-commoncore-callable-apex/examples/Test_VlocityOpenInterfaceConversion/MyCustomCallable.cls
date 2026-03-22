@@ -1,8 +1,7 @@
 /**
- * @description Callable implementation for calculateTotal (converted from VlocityOpenInterface2).
- *              Accepts price and quantity from inputMap, returns total in response envelope.
- *              Original: MyCustomRemoteClass implements omnistudio.VlocityOpenInterface2.
- * @author      sf-industries-callable-apex
+ * @description Callable implementation for calculateTotal (converted from VlocityOpenInterface).
+ *              Accepts Price and Quantity, returns TotalAmount in response envelope.
+ * @author      sf-industry-commoncore-callable-apex
  */
 public with sharing class MyCustomCallable implements System.Callable {
 
@@ -25,8 +24,8 @@ public with sharing class MyCustomCallable implements System.Callable {
     }
 
     private Map<String, Object> calculateTotal(Map<String, Object> inputMap, Map<String, Object> options) {
-        Decimal price = toDecimal(inputMap.get('price'));
-        Integer qty   = toInteger(inputMap.get('quantity'));
+        Decimal price = toDecimal(inputMap.get('Price'));
+        Integer qty   = toInteger(inputMap.get('Quantity'));
 
         if (price == null || qty == null) {
             return new Map<String, Object>{
@@ -35,7 +34,7 @@ public with sharing class MyCustomCallable implements System.Callable {
                 'errors'  => new List<Map<String, Object>>{
                     new Map<String, Object>{
                         'code'    => 'INVALID_INPUT',
-                        'message' => 'price and quantity are required and must be numeric'
+                        'message' => 'Price and Quantity are required and must be numeric'
                     }
                 }
             };
@@ -45,7 +44,7 @@ public with sharing class MyCustomCallable implements System.Callable {
 
         return new Map<String, Object>{
             'success' => true,
-            'data'    => new Map<String, Object>{ 'total' => total },
+            'data'    => new Map<String, Object>{ 'TotalAmount' => total },
             'errors'  => new List<Map<String, Object>>()
         };
     }

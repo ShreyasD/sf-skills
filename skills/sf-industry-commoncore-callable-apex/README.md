@@ -1,8 +1,8 @@
-# sf-industries-callable-apex
+# sf-industry-commoncore-callable-apex
 
-Generates and reviews Salesforce Industries (OmniStudio/Vlocity) Apex callable implementations.
-Build secure, deterministic `System.Callable` classes with a 120-point scoring rubric and
-migration guidance from legacy `VlocityOpenInterface` implementations.
+Generates and reviews Salesforce Industries Common Core (OmniStudio/Vlocity) Apex callable
+implementations. Build secure, deterministic `System.Callable` classes with a 120-point scoring
+rubric and migration guidance from legacy `VlocityOpenInterface` implementations.
 
 ## Features
 
@@ -20,7 +20,7 @@ migration guidance from legacy `VlocityOpenInterface` implementations.
 npx skills add Jaganpro/sf-skills
 
 # Or install just this skill
-npx skills add Jaganpro/sf-skills --skill sf-industries-callable-apex
+npx skills add Jaganpro/sf-skills --skill sf-industry-commoncore-callable-apex
 ```
 
 ## Quick Start
@@ -28,7 +28,7 @@ npx skills add Jaganpro/sf-skills --skill sf-industries-callable-apex
 ### 1. Invoke the skill
 
 ```
-Skill: sf-industries-callable-apex
+Skill: sf-industry-commoncore-callable-apex
 Request: "Create a callable implementation for Order actions with createOrder and cancelOrder"
 ```
 
@@ -46,6 +46,12 @@ The skill generates:
 - Callable class with explicit `switch on action`
 - Consistent response envelope
 - Test class examples for action coverage and error paths
+
+## Bundled Examples
+
+- [examples/Test_QuoteByProductCallable/](examples/Test_QuoteByProductCallable/) — read-only callable example with SOQL and test coverage
+- [examples/Test_VlocityOpenInterfaceConversion/](examples/Test_VlocityOpenInterfaceConversion/) — migration pattern from legacy `VlocityOpenInterface`
+- [examples/Test_VlocityOpenInterface2Conversion/](examples/Test_VlocityOpenInterface2Conversion/) — migration pattern from `VlocityOpenInterface2`
 
 ## Scoring System (120 Points)
 

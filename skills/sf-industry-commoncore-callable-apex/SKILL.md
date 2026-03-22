@@ -1,10 +1,15 @@
 ---
-name: sf-industries-callable-apex
+name: sf-industry-commoncore-callable-apex
 description: >
-  Generates and reviews Salesforce Industries (OmniStudio/Vlocity) Apex callable implementations.
-  Use when creating or reviewing System.Callable classes, Industries callable extensions, or when
-  the user mentions callable implementations, OmniStudio, Vlocity, or Industries Apex extensions.
-  DO NOT TRIGGER when: generic Apex classes/triggers (use sf-apex), LWC, Flow XML, or SOQL-only work.
+  Salesforce Industries Common Core (OmniStudio/Vlocity) Apex callable generation and review with
+  120-point scoring.
+  TRIGGER when: user creates or reviews System.Callable classes, migrates
+  `VlocityOpenInterface` / `VlocityOpenInterface2`, or builds Industries callable extensions used by
+  OmniStudio, Integration Procedures, or DataRaptors.
+  DO NOT TRIGGER when: generic Apex classes/triggers (use sf-apex), building Integration Procedures
+  (use sf-industry-commoncore-integration-procedure), authoring OmniScripts (use sf-industry-commoncore-omniscript),
+  configuring Data Mappers (use sf-industry-commoncore-datamapper), or analyzing namespace/dependency
+  issues (use sf-industry-commoncore-omnistudio-analyze).
 license: MIT
 metadata:
   version: "1.0.0"
@@ -12,10 +17,11 @@ metadata:
   scoring: "120 points across 7 categories"
 ---
 
-# sf-industries-callable-apex: Callable Implementations for Salesforce Industries
+# sf-industry-commoncore-callable-apex: Callable Apex for Salesforce Industries Common Core
 
-Specialist for Salesforce Industries callable implementations. Produce secure, deterministic, and
-configurable Apex that cleanly integrates with Industries extension points.
+Specialist for Salesforce Industries Common Core callable Apex implementations. Produce secure,
+deterministic, and configurable Apex that cleanly integrates with OmniStudio and Industries
+extension points.
 
 ## Core Responsibilities
 
@@ -345,6 +351,12 @@ Use the core Apex standards, testing patterns, and guardrails in:
 - [skills/sf-apex/SKILL.md](../sf-apex/SKILL.md)
 
 ---
+
+## Bundled Examples
+
+- [examples/Test_QuoteByProductCallable/](examples/Test_QuoteByProductCallable/) — read-only query example with `WITH USER_MODE`
+- [examples/Test_VlocityOpenInterfaceConversion/](examples/Test_VlocityOpenInterfaceConversion/) — migration from legacy `VlocityOpenInterface`
+- [examples/Test_VlocityOpenInterface2Conversion/](examples/Test_VlocityOpenInterface2Conversion/) — migration from `VlocityOpenInterface2`
 
 ## Notes
 

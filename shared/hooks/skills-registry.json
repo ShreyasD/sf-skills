@@ -1170,6 +1170,37 @@
       "triggerWhen": "user creates Integration Procedures, adds DataRaptor steps, configures Remote Actions, or reviews existing IP configurations",
       "doNotTriggerWhen": "building OmniScripts (use sf-industry-commoncore-omniscript), creating Data Mappers directly (use sf-industry-commoncore-datamapper), or analyzing cross-component dependencies (use sf-industry-commoncore-omnistudio-analyze)"
     },
+    "sf-industry-commoncore-callable-apex": {
+      "keywords": [
+        "industries callable",
+        "omnistudio callable",
+        "vlocityopeninterface",
+        "vlocityopeninterface2",
+        "invokemethod",
+        "callable implementation",
+        "remote class",
+        "industries apex extension",
+        "omniscript callable",
+        "integration procedure callable"
+      ],
+      "intentPatterns": [
+        "create.*industries.*callable",
+        "build.*industries.*callable",
+        "review.*industries.*callable",
+        "fix.*industries.*callable",
+        "implement.*omnistudio.*callable",
+        "system.*callable.*omnistudio",
+        "migrate.*vlocityopeninterface",
+        "convert.*vlocityopeninterface",
+        "callable.*integration procedure",
+        "callable.*omniscript"
+      ],
+      "filePatterns": [],
+      "priority": "medium",
+      "description": "Salesforce Industries Common Core callable Apex generation and review for System.Callable and legacy Open Interface migrations",
+      "triggerWhen": "user creates or reviews System.Callable classes, migrates VlocityOpenInterface / VlocityOpenInterface2, or builds Industries callable extensions used by OmniStudio, Integration Procedures, or DataRaptors",
+      "doNotTriggerWhen": "generic Apex classes/triggers (use sf-apex), building Integration Procedures (use sf-industry-commoncore-integration-procedure), authoring OmniScripts (use sf-industry-commoncore-omniscript), configuring Data Mappers (use sf-industry-commoncore-datamapper), or analyzing namespace/dependency issues (use sf-industry-commoncore-omnistudio-analyze)"
+    },
     "sf-industry-commoncore-omniscript": {
       "keywords": [
         "omniscript",

@@ -72,7 +72,7 @@ python3 install.py --profile delete old       # Delete a profile
 
 | Component | Destination | Description |
 |-----------|-------------|-------------|
-| 19 sf-* skills | `~/.claude/skills/sf-*/` | Native Claude Code skill discovery |
+| Managed sf-* skills | `~/.claude/skills/sf-*/` | Native Claude Code skill discovery |
 | Hook scripts | `~/.claude/hooks/` | Guardrails, auto-approval, validation |
 | LSP engine | `~/.claude/lsp-engine/` | Apex, LWC, AgentScript language servers |
 | Agent definitions | `~/.claude/agents/` | FDE + PS agent definitions |

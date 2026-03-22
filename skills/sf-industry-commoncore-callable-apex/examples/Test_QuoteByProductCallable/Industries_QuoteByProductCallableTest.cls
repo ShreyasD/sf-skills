@@ -1,7 +1,7 @@
 /**
  * @description Test class for Industries_QuoteByProductCallable.
  *              Covers positive, negative, contract, and unsupported action scenarios.
- * @author      sf-industries-callable-apex
+ * @author      sf-industry-commoncore-callable-apex
  */
 @IsTest
 private class Industries_QuoteByProductCallableTest {

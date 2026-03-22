@@ -4,13 +4,13 @@
 
 [![Author](https://img.shields.io/badge/Author-Jag_Valaiyapathy-blue?logo=github)](https://github.com/Jaganpro)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-32-4F46E5)](#available-skills)
+[![Skills](https://img.shields.io/badge/Skills-33-4F46E5)](#available-skills)
 [![Claude Code Agents](https://img.shields.io/badge/Claude_Code_Agents-7-059669)](#agent-team)
 [![Standard](https://img.shields.io/badge/Agent_Skills-Compatible-0F766E)](https://agentskills.io)
 
 A reusable skill library for **Salesforce-focused coding agents**—covering Apex, Flow, LWC, SOQL, metadata, Data Cloud, integration, testing, deployment, and Agentforce workflows.
 
-**Included:** 32 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
+**Included:** 33 Salesforce skills, 7 specialist Claude Code agents, a shared hook system for guardrails and auto-validation, and LSP-backed feedback for Apex, LWC, and Agent Script.
 
 **Start here:** [Available Skills](#available-skills) · [Installation](#installation) · [Claude Code Features](#claude-code-features) · [Skill Architecture](#skill-architecture)
 
@@ -31,7 +31,7 @@ The library is organized by capability area so you can scan quickly, pick the ri
 | ☁️ **Data Cloud** | [sf-datacloud](skills/sf-datacloud/), [sf-datacloud-connect](skills/sf-datacloud-connect/), [sf-datacloud-prepare](skills/sf-datacloud-prepare/), [sf-datacloud-harmonize](skills/sf-datacloud-harmonize/), [sf-datacloud-segment](skills/sf-datacloud-segment/), [sf-datacloud-act](skills/sf-datacloud-act/), [sf-datacloud-retrieve](skills/sf-datacloud-retrieve/) | Data Cloud connections, ingestion, harmonization, segmentation, activation, and retrieval.<br><sub>Beta / Community Preview · live execution uses the external community <code>sf data360</code> runtime</sub> |
 | 🤖 **AI & Automation** | [sf-ai-agentscript](skills/sf-ai-agentscript/), [sf-ai-agentforce](skills/sf-ai-agentforce/), [sf-ai-agentforce-testing](skills/sf-ai-agentforce-testing/), [sf-ai-agentforce-observability](skills/sf-ai-agentforce-observability/), [sf-ai-agentforce-persona](skills/sf-ai-agentforce-persona/) | Agent design, Agent Script, testing, observability, and persona design |
 | 🚀 **DevOps & Tooling** | [sf-deploy](skills/sf-deploy/), [sf-diagram-mermaid](skills/sf-diagram-mermaid/), [sf-diagram-nanobananapro](skills/sf-diagram-nanobananapro/) | Deployment automation, Mermaid diagrams, and visual artifacts |
-| 🏢 **Industries** | [sf-industry-commoncore-omnistudio-analyze](skills/sf-industry-commoncore-omnistudio-analyze/), [sf-industry-commoncore-datamapper](skills/sf-industry-commoncore-datamapper/), [sf-industry-commoncore-integration-procedure](skills/sf-industry-commoncore-integration-procedure/), [sf-industry-commoncore-omniscript](skills/sf-industry-commoncore-omniscript/), [sf-industry-commoncore-flexcard](skills/sf-industry-commoncore-flexcard/) | OmniStudio: DataMappers, Integration Procedures, OmniScripts, FlexCards, dependency analysis |
+| 🏢 **Industries** | [sf-industry-commoncore-omnistudio-analyze](skills/sf-industry-commoncore-omnistudio-analyze/), [sf-industry-commoncore-datamapper](skills/sf-industry-commoncore-datamapper/), [sf-industry-commoncore-integration-procedure](skills/sf-industry-commoncore-integration-procedure/), [sf-industry-commoncore-callable-apex](skills/sf-industry-commoncore-callable-apex/), [sf-industry-commoncore-omniscript](skills/sf-industry-commoncore-omniscript/), [sf-industry-commoncore-flexcard](skills/sf-industry-commoncore-flexcard/) | OmniStudio: dependency analysis, Data Mappers, Integration Procedures, callable Apex, OmniScripts, and FlexCards |
 
 <a id="installation"></a>
 
@@ -73,7 +73,7 @@ npx skills add Jaganpro/sf-skills --list
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-This installs 32 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures guardrails, auto-validation on Write/Edit, org preflight checks, and background LSP prewarm.
+This installs 33 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures guardrails, auto-validation on Write/Edit, org preflight checks, and background LSP prewarm.
 
 > **Data Cloud note:** the installer brings in the `sf-datacloud-*` skills, but the external community `sf data360` CLI runtime is still a separate prerequisite. On first-time install the installer can prompt for it, or you can request it explicitly with `--with-datacloud-runtime`.
 
@@ -138,7 +138,7 @@ python3 ~/.claude/sf-skills-install.py --profile delete old
 
 ```
 ~/.claude/
-├── skills/                    # 32 Salesforce skills
+├── skills/                    # 33 Salesforce skills
 │   ├── sf-apex/SKILL.md
 │   ├── sf-flow/SKILL.md
 │   └── ... (30 more)
@@ -634,6 +634,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🔍 | `sf-industry-commoncore-omnistudio-analyze` | Namespace detection, dependency mapping, impact analysis | ✅ Live |
 | 📊 | `sf-industry-commoncore-datamapper` | Data Mapper (DataRaptor) creation, 100-pt scoring | ✅ Live |
 | 🔗 | `sf-industry-commoncore-integration-procedure` | Integration Procedure orchestration, 110-pt scoring | ✅ Live |
+| ⚙️ | `sf-industry-commoncore-callable-apex` | System.Callable generation/review and Open Interface migration patterns | ✅ Live |
 | 📝 | `sf-industry-commoncore-omniscript` | OmniScript guided experiences, 120-pt scoring | ✅ Live |
 | 🃏 | `sf-industry-commoncore-flexcard` | FlexCard UI components, 130-pt scoring | ✅ Live |
 
@@ -644,7 +645,7 @@ sf-industry-commoncore-{name}  # Industries Common Core (omnistudio)
 | 🏦 | `sf-industry-finserv` | KYC, AML, Wealth Management | 📋 Planned |
 | 💵 | `sf-industry-revenue` | CPQ, Billing, Revenue Lifecycle | 📋 Planned |
 
-**Current repo state:** 32 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
+**Current repo state:** 33 live skills today, with additional cloud, security, AI, and industry roadmap items still planned.
 
 </details>
 
@@ -665,6 +666,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 | August Krys | Agentforce metadata modernization, metadata/FLS improvements, data/deploy workflow updates | sf-ai-agentforce, sf-ai-agentscript, sf-metadata, sf-data, sf-deploy |
 | [Gnanasekaran Thoppae](https://github.com/gthoppae) | Data Cloud product family | sf-datacloud, sf-datacloud-connect, sf-datacloud-prepare, sf-datacloud-harmonize, sf-datacloud-segment, sf-datacloud-act, sf-datacloud-retrieve |
 | [David Ryan (weytani)](https://github.com/weytani) | Industries Common Core | sf-industry-commoncore-omnistudio-analyze, sf-industry-commoncore-datamapper, sf-industry-commoncore-integration-procedure, sf-industry-commoncore-omniscript, sf-industry-commoncore-flexcard |
+| [Shreyas Dhond (ShreyasD)](https://github.com/ShreyasD) | Industries Common Core callable Apex | sf-industry-commoncore-callable-apex |
 
 ## Issues & Support
 

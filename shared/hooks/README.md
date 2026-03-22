@@ -208,7 +208,7 @@ Place your validator at `skills/sf-newskill/hooks/scripts/your-validator.py`. It
 
 ### Why Single Registry?
 
-1. **DRY** - No duplicate configuration across 19+ skills
+1. **DRY** - No duplicate configuration across all sf-* skills
 2. **Consistency** - All skills use the same schema
 3. **Maintainability** - One place to update skill metadata
 4. **Discoverability** - Easy to see all skill relationships
