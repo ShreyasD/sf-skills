@@ -65,17 +65,39 @@ Then:
 - Default case throws a typed exception
 - No dynamic method invocation or reflection
 
+**VlocityOpenInterface / VlocityOpenInterface2 contract mapping**:
+
+When designing for legacy Open Interface extensions (or dual Callable + Open Interface support), map the signature:
+
+```
+invokeMethod(String methodName, Map<String, Object> inputMap, Map<String, Object> outputMap, Map<String, Object> options)
+```
+
+| Parameter | Role | Callable equivalent |
+|-----------|------|---------------------|
+| `methodName` | Action selector (same semantics as `action`) | `action` in `call(action, args)` |
+| `inputMap` | Primary input data (required keys, types) | `args.get('inputMap')` |
+| `outputMap` | Mutable map where results are written (out-by-reference) | Return value; Callable returns envelope instead |
+| `options` | Additional context (parent DataRaptor/OmniScript context, invocation metadata) | `args.get('options')` |
+
+Design rules for Open Interface contracts:
+- Treat `inputMap` and `options` as the combined input schema
+- Define what keys must be written to `outputMap` per action (success and error cases)
+- Preserve `methodName` strings so they align with Callable `action` strings
+- Document whether `options` is required, optional, or unused for each action
+
 ---
 
 ### Phase 3: Implementation Pattern
 
-**Callable skeleton**:
+**Vanilla System.Callable** (flat args, no Open Interface coupling):
+
 ```apex
 public with sharing class Industries_OrderCallable implements System.Callable {
     public Object call(String action, Map<String, Object> args) {
         switch on action {
             when 'createOrder' {
-                return createOrder(args);
+                return createOrder(args != null ? args : new Map<String, Object>());
             }
             when else {
                 throw new IndustriesCallableException('Unsupported action: ' + action);
@@ -84,11 +106,46 @@ public with sharing class Industries_OrderCallable implements System.Callable {
     }
 
     private Map<String, Object> createOrder(Map<String, Object> args) {
+        // Validate input (e.g. args.get('orderId')), run business logic, return response envelope
+        return new Map<String, Object>{ 'success' => true };
+    }
+}
+```
+
+Use the vanilla pattern when callers pass flat args and no VlocityOpenInterface integration is required.
+
+**Callable skeleton** (same inputs as VlocityOpenInterface):
+
+Use `inputMap` and `options` keys in `args` when integrating with Open Interface or when callers pass that structure:
+
+```apex
+public with sharing class Industries_OrderCallable implements System.Callable {
+    public Object call(String action, Map<String, Object> args) {
+        Map<String, Object> inputMap = (args != null && args.containsKey('inputMap'))
+            ? (Map<String, Object>) args.get('inputMap') : (args != null ? args : new Map<String, Object>());
+        Map<String, Object> options  = (args != null && args.containsKey('options'))
+            ? (Map<String, Object>) args.get('options')  : new Map<String, Object>();
+        if (inputMap == null) { inputMap = new Map<String, Object>(); }
+        if (options  == null) { options  = new Map<String, Object>(); }
+
+        switch on action {
+            when 'createOrder' {
+                return createOrder(inputMap, options);
+            }
+            when else {
+                throw new IndustriesCallableException('Unsupported action: ' + action);
+            }
+        }
+    }
+
+    private Map<String, Object> createOrder(Map<String, Object> inputMap, Map<String, Object> options) {
         // Validate input, run business logic, return response envelope
         return new Map<String, Object>{ 'success' => true };
     }
 }
 ```
+
+**Input format**: Callers pass `args` as `{ 'inputMap' => Map<String, Object>, 'options' => Map<String, Object> }`. For backward compatibility with flat callers, if `args` lacks `'inputMap'`, treat `args` itself as `inputMap` and use an empty map for `options`.
 
 **Implementation rules**:
 1. Keep `call()` thin; delegate to private methods or service classes
@@ -96,6 +153,52 @@ public with sharing class Industries_OrderCallable implements System.Callable {
 3. Enforce CRUD/FLS and sharing (`with sharing`, `Security.stripInaccessible()`)
 4. Bulkify when args include record collections
 5. Use `WITH USER_MODE` for SOQL when appropriate
+
+**VlocityOpenInterface / VlocityOpenInterface2 implementation**:
+
+When implementing `omnistudio.VlocityOpenInterface` or `omnistudio.VlocityOpenInterface2`, use the signature:
+
+```apex
+global Boolean invokeMethod(String methodName, Map<String, Object> inputMap,
+                           Map<String, Object> outputMap, Map<String, Object> options)
+```
+
+Open Interface skeleton:
+
+```apex
+global with sharing class Industries_OrderOpenInterface implements omnistudio.VlocityOpenInterface2 {
+    global Boolean invokeMethod(String methodName, Map<String, Object> inputMap,
+                                Map<String, Object> outputMap, Map<String, Object> options) {
+        switch on methodName {
+            when 'createOrder' {
+                Map<String, Object> result = createOrder(inputMap, options);
+                outputMap.putAll(result);
+                return true;
+            }
+            when else {
+                outputMap.put('success', false);
+                outputMap.put('errors', new List<Map<String, Object>>{
+                    new Map<String, Object>{ 'code' => 'UNSUPPORTED_ACTION', 'message' => 'Unsupported action: ' + methodName }
+                });
+                return false;
+            }
+        }
+    }
+
+    private Map<String, Object> createOrder(Map<String, Object> inputMap, Map<String, Object> options) {
+        // Validate input, run business logic, return response envelope
+        return new Map<String, Object>{ 'success' => true, 'data' => new Map<String, Object>() };
+    }
+}
+```
+
+Open Interface implementation rules:
+- Write results into `outputMap` via `putAll()` or individual `put()` calls; do not return the envelope from `invokeMethod`
+- Return `true` for success, `false` for unsupported or failed actions
+- Use the same internal private methods as the Callable (same `inputMap` and `options` parameters); only the entry point differs
+- Populate `outputMap` with the same envelope shape (`success`, `data`, `errors`) for consistency
+
+Both Callable and Open Interface accept the same inputs (`inputMap`, `options`) and delegate to identical private method signatures for shared logic.
 
 ---
 
@@ -115,7 +218,8 @@ private class Industries_OrderCallableTest {
     static void testCreateOrder() {
         System.Callable svc = new Industries_OrderCallable();
         Map<String, Object> args = new Map<String, Object>{
-            'orderId' => '001000000000001'
+            'inputMap' => new Map<String, Object>{ 'orderId' => '001000000000001' },
+            'options'  => new Map<String, Object>()
         };
         Map<String, Object> result =
             (Map<String, Object>) svc.call('createOrder', args);
@@ -146,9 +250,9 @@ action contract stable. Use the Salesforce guidance as the source of truth.
 
 **Guidance**:
 - Preserve action names (`methodName`) as `action` strings in `call()`
-- Convert `(input, outMap, options)` into a single `args` map
+- Pass `inputMap` and `options` as keys in `args`: `{ 'inputMap' => inputMap, 'options' => options }`
 - Return a consistent response envelope instead of mutating `outMap`
-- Keep `call()` thin; delegate to the same internal methods
+- Keep `call()` thin; delegate to the same internal methods with `(inputMap, options)` signature
 - Add tests for each action and unsupported action
 
 **Example migration (pattern)**:
@@ -166,12 +270,17 @@ global class OrderOpenInterface implements omnistudio.VlocityOpenInterface2 {
     }
 }
 
-// AFTER: System.Callable
+// AFTER: System.Callable (same inputs: inputMap, options)
 public with sharing class OrderCallable implements System.Callable {
     public Object call(String action, Map<String, Object> args) {
+        Map<String, Object> inputMap = args != null ? (Map<String, Object>) args.get('inputMap') : new Map<String, Object>();
+        Map<String, Object> options  = args != null ? (Map<String, Object>) args.get('options')   : new Map<String, Object>();
+        if (inputMap == null) { inputMap = new Map<String, Object>(); }
+        if (options  == null) { options  = new Map<String, Object>(); }
+
         switch on action {
             when 'createOrder' {
-                return createOrder(args);
+                return createOrder(inputMap, options);
             }
             when else {
                 throw new IndustriesCallableException('Unsupported action: ' + action);

@@ -9,7 +9,8 @@ migration guidance from legacy `VlocityOpenInterface` implementations.
 - **Callable Generation**: Create `System.Callable` classes with safe action dispatch
 - **Callable Review**: Analyze existing callable implementations for risks and fixes
 - **120-Point Scoring**: Validation across 7 callable-specific categories
-- **Migration Guidance**: Patterns for moving from `VlocityOpenInterface`/`VlocityOpenInterface2`
+- **VlocityOpenInterface / VlocityOpenInterface2 Support**: Phase 2 contract mapping and Phase 3 implementation patterns for `invokeMethod(String methodName, Map<String, Object> inputMap, Map<String, Object> outputMap, Map<String, Object> options)`
+- **Migration Guidance**: Patterns for moving from `VlocityOpenInterface`/`VlocityOpenInterface2` to `System.Callable`
 - **Testing Examples**: Test class patterns for actions, errors, and bulk inputs
 
 ## Installation
@@ -73,6 +74,10 @@ The skill generates:
 
 - [Skill Instructions](SKILL.md)
 - [Callable Implementations (Salesforce Help)](https://help.salesforce.com/s/articleView?id=ind.v_dev_t_callable_implementations_651821.htm&type=5)
+
+### VlocityOpenInterface / VlocityOpenInterface2
+
+The skill includes design (Phase 2) and implementation (Phase 3) guidance for the Open Interface signature `invokeMethod(String methodName, Map<String, Object> inputMap, Map<String, Object> outputMap, Map<String, Object> options)`. Use this when extending legacy OmniStudio/Vlocity integration points or building dual Callable + Open Interface implementations.
 
 ## Requirements
 

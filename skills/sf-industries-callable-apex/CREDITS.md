@@ -22,6 +22,7 @@ Key contributions:
 
 ### OmniStudio / Vlocity Open Interface (Legacy)
 - **Provider**: Salesforce Industries
+- **Interface signatures**: `VlocityOpenInterface` and `VlocityOpenInterface2` with `invokeMethod(String methodName, Map<String, Object> inputMap, Map<String, Object> outputMap, Map<String, Object> options)`
 - **Reference**: https://help.salesforce.com/s/articleView?id=ind.v_dev_t_callable_implementations_651821.htm&type=5
 
 ### System.Callable (Salesforce Platform)
