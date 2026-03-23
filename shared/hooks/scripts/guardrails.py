@@ -230,13 +230,15 @@ def is_output_only_command(command: str) -> bool:
 
 
 def is_sf_context(command: str) -> bool:
-    """Check if command is Salesforce-related."""
+    """Check if command is Salesforce-related (ignoring quoted argument content)."""
+    # Strip quoted strings so keywords inside argument values don't trigger
+    stripped = re.sub(r"""(['"])(?:(?!\1).)*\1""", '""', command)
     sf_indicators = [
         r'\bsf\b', r'\bsfdx\b', r'SELECT\s+', r'DELETE\s+FROM', r'UPDATE\s+\w+\s+SET',
         r'force-app', r'\.cls\b', r'\.trigger\b', r'\.flow-meta', r'scratch\s*org',
         r'--target-org', r'--source-org', r'apex\s+run', r'data\s+query'
     ]
-    return any(re.search(p, command, re.IGNORECASE) for p in sf_indicators)
+    return any(re.search(p, stripped, re.IGNORECASE) for p in sf_indicators)
 
 
 def check_critical(command: str) -> Optional[Dict[str, Any]]:

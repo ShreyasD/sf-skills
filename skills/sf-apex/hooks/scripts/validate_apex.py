@@ -111,37 +111,31 @@ class ApexValidator:
 
     def _check_soql_in_loops(self):
         """Check for SOQL queries inside loops (critical anti-pattern)."""
-        loop_depth = 0
-        loop_start_line = 0
+        loop_stack = []  # list of {'start': line_num, 'depth': brace_depth}
 
-        # Patterns for loops
         loop_patterns = [
             r'\bfor\s*\(',
             r'\bwhile\s*\(',
             r'\bdo\s*\{'
         ]
-
-        # Pattern for SOQL
         soql_pattern = r'\[\s*SELECT\s+'
 
         for i, line in enumerate(self.lines, 1):
-            # Check for loop start
             for pattern in loop_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
-                    if loop_depth == 0:
-                        loop_start_line = i
-                    loop_depth += 1
+                    loop_stack.append({'start': i, 'depth': 0})
 
-            # Check for loop end (simplified - counts braces)
-            loop_depth += line.count('{') - line.count('}')
-            loop_depth = max(0, loop_depth)
+            open_braces = line.count('{')
+            close_braces = line.count('}')
+            for scope in loop_stack:
+                scope['depth'] += open_braces - close_braces
+            loop_stack = [s for s in loop_stack if s['depth'] > 0]
 
-            # Check for SOQL inside loop
-            if loop_depth > 0 and re.search(soql_pattern, line, re.IGNORECASE):
+            if loop_stack and re.search(soql_pattern, line, re.IGNORECASE):
                 self.issues.append({
                     'severity': 'CRITICAL',
                     'category': 'bulkification',
-                    'message': f'SOQL query inside loop (loop started line {loop_start_line})',
+                    'message': f'SOQL query inside loop (loop started line {loop_stack[0]["start"]})',
                     'line': i,
                     'fix': 'Move SOQL before loop, query all needed records, filter in loop'
                 })
@@ -149,8 +143,7 @@ class ApexValidator:
 
     def _check_dml_in_loops(self):
         """Check for DML operations inside loops (critical anti-pattern)."""
-        loop_depth = 0
-        loop_start_line = 0
+        loop_stack = []  # list of {'start': line_num, 'depth': brace_depth}
 
         loop_patterns = [
             r'\bfor\s*\(',
@@ -170,20 +163,21 @@ class ApexValidator:
         for i, line in enumerate(self.lines, 1):
             for pattern in loop_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
-                    if loop_depth == 0:
-                        loop_start_line = i
-                    loop_depth += 1
+                    loop_stack.append({'start': i, 'depth': 0})
 
-            loop_depth += line.count('{') - line.count('}')
-            loop_depth = max(0, loop_depth)
+            open_braces = line.count('{')
+            close_braces = line.count('}')
+            for scope in loop_stack:
+                scope['depth'] += open_braces - close_braces
+            loop_stack = [s for s in loop_stack if s['depth'] > 0]
 
-            if loop_depth > 0:
+            if loop_stack:
                 for dml_pattern in dml_patterns:
                     if re.search(dml_pattern, line, re.IGNORECASE):
                         self.issues.append({
                             'severity': 'CRITICAL',
                             'category': 'bulkification',
-                            'message': f'DML inside loop (loop started line {loop_start_line})',
+                            'message': f'DML inside loop (loop started line {loop_stack[0]["start"]})',
                             'line': i,
                             'fix': 'Collect records in loop, perform single DML after loop'
                         })
