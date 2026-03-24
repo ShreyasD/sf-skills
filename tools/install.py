@@ -1645,14 +1645,6 @@ def get_hooks_config() -> Dict[str, Any]:
             {
                 "hooks": [{
                     "type": "command",
-                    "command": f"{python_cmd} {scripts_path}/org-preflight.py",
-                    "timeout": 30000,
-                    "async": True
-                }],
-            },
-            {
-                "hooks": [{
-                    "type": "command",
                     "command": f"{python_cmd} {scripts_path}/lsp-prewarm.py",
                     "timeout": 60000,
                     "async": True
@@ -2500,7 +2492,7 @@ def cmd_install(dry_run: bool = False, force: bool = False,
      • Salesforce skills (sf-apex, sf-flow, sf-datacloud, ...)
      • 10 hook scripts (guardrails, validation)
      • LSP engine (Apex, LWC, AgentScript language servers)
-     • Automatic validation, guardrails, and org preflight checks
+     • Automatic validation and guardrails
      • Optional Data Cloud runtime on request (--with-datacloud-runtime)
 
   📍 INSTALL LOCATIONS:

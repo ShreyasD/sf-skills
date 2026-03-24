@@ -15,7 +15,6 @@ flowchart TB
     end
 
     subgraph hooks_session["📌 SessionStart Hooks"]
-        H_ORG["🔌 org-preflight.py"]
         H_LSP["⚡ lsp-prewarm.py"]
     end
 
@@ -48,7 +47,6 @@ flowchart TB
     S1 --> S2 --> LLM
 
     %% SessionStart hooks
-    S1 -.-> H_ORG
     S1 -.-> H_LSP
 
     %% Agentic Loop
@@ -131,7 +129,6 @@ For terminals and viewers that don't render Mermaid:
 │           │                      │                                              │
 │           ▼                      │                                              │
 │  ┌─────────────────────────┐     │                                              │
-│  │ 🔌 org-preflight.py     │     │                                              │
 │  │ ⚡ lsp-prewarm.py       │     │                                              │
 │  └─────────────────────────┘     │                                              │
 └──────────────────────────────────│──────────────────────────────────────────────┘
@@ -196,7 +193,6 @@ For terminals and viewers that don't render Mermaid:
 
 | Event | Hook Script | Purpose | Action Type |
 |-------|-------------|---------|-------------|
-| **SessionStart** | `org-preflight.py` | Validate SF org connectivity | State file |
 | **SessionStart** | `lsp-prewarm.py` | Spawn LSP servers in background | Background |
 | **PreToolUse** | `guardrails.py` | Block dangerous operations | BLOCK/MODIFY |
 | **PostToolUse** | `validator-dispatcher.py` | Route to skill-specific validators | Feedback |
@@ -227,7 +223,7 @@ For terminals and viewers that don't render Mermaid:
 | Color | Hex | Meaning | Nodes |
 |-------|-----|---------|-------|
 | 🟦 Cyan-200 | `#a5f3fc` | Lifecycle event nodes | S1-S10 |
-| 🟩 Teal-200 | `#99f6e4` | SessionStart hooks | org-preflight, lsp-prewarm |
+| 🟩 Teal-200 | `#99f6e4` | SessionStart hooks | lsp-prewarm |
 | 🟧 Orange-200 | `#fed7aa` | Guards/Pre-checks | guardrails |
 | 🟣 Violet-200 | `#ddd6fe` | Validation | validator-dispatcher |
 | 🔵 Indigo-200 | `#c7d2fe` | Execution | LLM, EXEC |
@@ -256,9 +252,8 @@ PostToolUse → validator-dispatcher.py → Validates file
 ### Pattern 3: Workflow Tracking
 
 ```
-SessionStart → org-preflight.py → Writes ~/.claude/.sf-org-state.json
-           → lsp-prewarm.py → Writes ~/.claude/.lsp-prewarm-state.json
-                            → Status line reads these files
+SessionStart → lsp-prewarm.py → Writes ~/.claude/.lsp-prewarm-state.json
+                              → Status line reads these files
 ```
 
 ---

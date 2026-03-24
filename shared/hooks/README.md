@@ -10,10 +10,8 @@ shared/hooks/
 ├── scripts/
 │   ├── guardrails.py                 # PreToolUse hook (block/warn dangerous operations)
 │   ├── validator-dispatcher.py       # PostToolUse hook (routes to skill-specific validators)
-│   ├── llm-eval.py                   # LLM-powered semantic evaluation (Haiku)
 │   ├── session-init.py               # Session initialization hook
 │   ├── lsp-prewarm.py                # LSP server pre-warming
-│   ├── org-preflight.py              # Org connectivity preflight check
 │   ├── naming_validator.py           # Naming convention enforcement
 │   ├── security_validator.py         # Security pattern detection
 │   └── stdin_utils.py               # Shared stdin reading utility
@@ -117,17 +115,6 @@ shared/hooks/
 | `.field-meta.xml` | sf-metadata | validate_metadata.py |
 | `.permissionset-meta.xml` | sf-metadata | validate_metadata.py |
 | `.namedCredential-meta.xml` | sf-integration | validate_integration.py |
-
-### 3. LLM-Powered Hooks (Haiku)
-
-**Purpose:** Semantic evaluation for complex patterns that can't be detected by regex.
-
-**Location:** `scripts/llm-eval.py`
-
-**Use Cases:**
-- Code quality scoring
-- Security review (SOQL injection, FLS bypass detection)
-- Deployment risk assessment
 
 ---
 

@@ -70,7 +70,6 @@ flowchart TB
 
     subgraph hooks_session["📌 SessionStart Hooks"]
         H_INIT["🏗️ session-init.py"]
-        H_ORG["🔌 org-preflight.py"]
         H_LSP["⚡ lsp-prewarm.py"]
     end
 
@@ -111,7 +110,6 @@ flowchart TB
 
     %% SessionStart hooks
     S1 -.-> H_INIT
-    S1 -.-> H_ORG
     S1 -.-> H_LSP
 
     %% Agentic Loop
@@ -166,7 +164,6 @@ flowchart TB
 
     %% Node Styling - SessionStart hooks (Teal-200)
     style H_INIT fill:#99f6e4,stroke:#0f766e,color:#1f2937
-    style H_ORG fill:#99f6e4,stroke:#0f766e,color:#1f2937
     style H_LSP fill:#99f6e4,stroke:#0f766e,color:#1f2937
 
     %% Node Styling - PreToolUse hooks (Orange-200)

@@ -42,7 +42,7 @@ The library is organized by capability area so you can scan quickly, pick the ri
 | If you want... | Use this | Best for |
 |---|---|---|
 | Skills only, any supported coding agent | <code>npx skills add Jaganpro/sf-skills</code> | Codex, Gemini CLI, OpenCode, Amp, Claude Code without local hooks |
-| Full Claude Code experience | <code>curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh &#124; bash</code> | Hooks, agents, LSP, guardrails, org preflight |
+| Full Claude Code experience | <code>curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh &#124; bash</code> | Hooks, agents, LSP, guardrails |
 | Manual / Windows / CI-friendly install | <code>curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.py &#124; python3</code> | Direct installer control without bash wrapper |
 
 ### Any AI Coding Agent
@@ -73,7 +73,7 @@ npx skills add Jaganpro/sf-skills --list
 curl -sSL https://raw.githubusercontent.com/Jaganpro/sf-skills/main/tools/install.sh | bash
 ```
 
-This installs 33 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures guardrails, auto-validation on Write/Edit, org preflight checks, and background LSP prewarm.
+This installs 33 skills, 7 specialist agents, a shared hook system, and the local LSP engine. It also configures guardrails, auto-validation on Write/Edit, and background LSP prewarm.
 
 > **Data Cloud note:** the installer brings in the `sf-datacloud-*` skills, but the external community `sf data360` CLI runtime is still a separate prerequisite. On first-time install the installer can prompt for it, or you can request it explicitly with `--with-datacloud-runtime`.
 
@@ -158,8 +158,8 @@ python3 ~/.claude/sf-skills-install.py --profile delete old
 
 | Event | What it does |
 |------|----------|
-| **SessionStart** | Session init, org preflight, LSP prewarm |
-| **PreToolUse** | Guardrails + API version checks before Bash / Salesforce tool usage |
+| **SessionStart** | Session init, LSP prewarm |
+| **PreToolUse** | Guardrails before Bash / Salesforce tool usage |
 | **PostToolUse** | Validator dispatcher for file-aware checks after Write/Edit |
 
 For deeper install and hook internals, see [tools/README.md](tools/README.md) and [shared/hooks/README.md](shared/hooks/README.md).
