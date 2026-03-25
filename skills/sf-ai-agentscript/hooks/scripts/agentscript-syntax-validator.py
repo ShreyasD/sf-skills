@@ -572,12 +572,39 @@ class AgentScriptValidator:
                         pass
                     continue
 
+                # Multi-line variable declaration: "Name:" on its own line,
+                # with type/modifier/default on subsequent indented lines.
+                # This captures the variable name for reserved-name checks
+                # even when the full single-line pattern doesn't match.
+                multiline_var_match = re.match(r"^([A-Za-z][A-Za-z0-9_]*)\s*:\s*$", commentless)
+                if multiline_var_match:
+                    name = multiline_var_match.group(1)
+                    definition = {
+                        "name": name,
+                        "modifier": "",
+                        "type": "",
+                        "line": i,
+                        "indent": indent,
+                        "default": None,
+                        "source": None,
+                        "source_line": None,
+                    }
+                    self.variable_names.setdefault(name, i)
+                    self.variable_definitions.append(definition)
+                    self.variable_by_name[name] = definition
+                    current_variable = definition
+                    continue
+
                 if current_variable and indent > current_variable["indent"]:
                     field_match = self.KEY_VALUE_PATTERN.match(stripped)
                     if field_match:
                         field, raw_value = field_match.groups()
                         cleaned = self._clean_scalar_value(raw_value)
-                        if field == "source":
+                        if field == "type" and not current_variable.get("type"):
+                            current_variable["type"] = cleaned
+                        elif field == "default" and current_variable.get("default") is None:
+                            current_variable["default"] = cleaned
+                        elif field == "source":
                             current_variable["source"] = cleaned
                             current_variable["source_line"] = i
                             if "@MessagingSession." in cleaned or "@MessagingEndUser." in cleaned:

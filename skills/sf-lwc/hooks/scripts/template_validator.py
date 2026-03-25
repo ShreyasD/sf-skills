@@ -263,21 +263,21 @@ def format_output(results: Dict) -> str:
 
     if critical:
         output_parts.append(f"🔴 Critical ({len(critical)}):")
-        for issue in critical[:5]:
+        for issue in critical[:10]:
             output_parts.append(f"   L{issue['line']}: {issue['message']}")
             if issue.get('fix'):
-                fix = issue['fix'][:60] + '...' if len(issue['fix']) > 60 else issue['fix']
+                fix = issue['fix'][:120] + '...' if len(issue['fix']) > 120 else issue['fix']
                 output_parts.append(f"      💡 {fix}")
 
     if warnings:
         output_parts.append(f"🟡 Warnings ({len(warnings)}):")
-        for issue in warnings[:3]:
+        for issue in warnings[:5]:
             output_parts.append(f"   L{issue['line']}: {issue['message']}")
             if issue.get('fix'):
-                fix = issue['fix'][:60] + '...' if len(issue['fix']) > 60 else issue['fix']
+                fix = issue['fix'][:120] + '...' if len(issue['fix']) > 120 else issue['fix']
                 output_parts.append(f"      💡 {fix}")
 
-    remaining = len(issues) - len(critical[:5]) - len(warnings[:3])
+    remaining = len(issues) - len(critical[:10]) - len(warnings[:5])
     if remaining > 0:
         output_parts.append(f"   ... and {remaining} more issues")
 

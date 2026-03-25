@@ -211,6 +211,15 @@ def validate_named_credential(content: str) -> None:
 
     CATEGORIES['best_practices']['score'] = bp_score
 
+    # Named Credential XML files are configuration-only — Error Handling,
+    # Bulkification, Architecture, and Documentation categories are not
+    # applicable. Grant full marks for non-applicable categories so that
+    # valid XML files are not penalized by the Apex-oriented rubric.
+    CATEGORIES['error_handling']['score'] = CATEGORIES['error_handling']['max']
+    CATEGORIES['bulkification']['score'] = CATEGORIES['bulkification']['max']
+    CATEGORIES['architecture']['score'] = CATEGORIES['architecture']['max']
+    CATEGORIES['documentation']['score'] = CATEGORIES['documentation']['max']
+
 
 def validate_platform_event(content: str) -> None:
     """Validate Platform Event definition."""

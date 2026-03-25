@@ -48,6 +48,8 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests requiring external resources",
+    "hooks: validation hook tests",
+    "org_required: tests requiring a connected Salesforce org",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
