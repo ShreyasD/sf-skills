@@ -2825,6 +2825,14 @@ def cmd_install(dry_run: bool = False, force: bool = False,
         if state == InstallState.NPX:
             cleanups.append(("npx skills", lambda: cleanup_npx(dry_run)))
 
+        # Always clean up stale npx artifacts — a previous npx install may have
+        # left ~/.agents/.skill-lock.json and canonical copies behind even after
+        # migrating to UNIFIED state. cleanup_npx() no-ops when nothing to clean.
+        if state != InstallState.NPX:
+            npx_cleaned = cleanup_npx(dry_run)
+            if npx_cleaned > 0:
+                cleanups.append((f"{npx_cleaned} stale npx entries", lambda: True))
+
         # Remove old hooks from settings.json
         hooks_removed = cleanup_settings_hooks(dry_run)
         if hooks_removed > 0:
