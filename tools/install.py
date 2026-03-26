@@ -651,6 +651,10 @@ def _run_command(cmd: List[str], cwd: Optional[Path] = None,
                  timeout: int = 300) -> Tuple[bool, str]:
     """Run an external command and capture stderr/stdout for troubleshooting."""
     try:
+        # Suppress interactive prompts (e.g., git credential helper) by
+        # detaching stdin.  GIT_TERMINAL_PROMPT=0 prevents git-specific
+        # credential popups on macOS/Windows.
+        env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"} if cmd and cmd[0] == "git" else None
         result = subprocess.run(
             cmd,
             cwd=str(cwd) if cwd else None,
@@ -658,6 +662,8 @@ def _run_command(cmd: List[str], cwd: Optional[Path] = None,
             text=True,
             timeout=timeout,
             check=False,
+            stdin=subprocess.DEVNULL,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         return False, f"Timed out after {timeout}s: {' '.join(cmd)}"
@@ -738,9 +744,17 @@ def install_datacloud_runtime(dry_run: bool = False) -> Tuple[bool, List[str]]:
             ["git", "clone", DATACLOUD_RUNTIME_REPO, str(DATACLOUD_RUNTIME_PLUGIN_DIR)],
             timeout=600,
         )
-        notes.append(f"{'Cloned' if ok else 'Failed to clone'} runtime checkout: {msg or DATACLOUD_RUNTIME_PLUGIN_DIR}")
         if not ok:
+            if "Authentication failed" in msg or "could not read Username" in msg:
+                notes.append(
+                    f"Failed to clone runtime checkout: Authentication failed for {DATACLOUD_RUNTIME_REPO}\n"
+                    "  This is a community repo that may require GitHub access.\n"
+                    "  The Data Cloud runtime is optional — sf-skills works fine without it."
+                )
+            else:
+                notes.append(f"Failed to clone runtime checkout: {msg or DATACLOUD_RUNTIME_PLUGIN_DIR}")
             return False, notes
+        notes.append(f"Cloned runtime checkout: {DATACLOUD_RUNTIME_PLUGIN_DIR}")
 
     for cmd, label, timeout in [
         (["yarn", "install"], "Installed runtime dependencies", 1200),
