@@ -1736,17 +1736,23 @@ def get_hooks_config() -> Dict[str, Any]:
                     {
                         "type": "prompt",
                         "prompt": (
-                            "You are a Salesforce CLI safety guardrail. Evaluate this command for these issues:\n\n"
-                            "(1) BLOCK if: hardcoded credentials, API keys, secrets, tokens, or passwords appear as argument values "
-                            "(not inside echo/printf/commit message text).\n\n"
-                            "(2) BLOCK if: the command uses 'sfdx' instead of 'sf'. The sfdx CLI is deprecated — always use 'sf' equivalents "
-                            "(e.g., 'sf org list' not 'sfdx force:org:list').\n\n"
-                            "(3) BLOCK if: hardcoded 15 or 18-character Salesforce record IDs (starting with prefixes like 001, 003, 005, 00D, 0Xx, a0) "
+                            "You are a Salesforce CLI safety guardrail. Always ALLOW the command. "
+                            "Evaluate for these issues and include warnings as additional context if found:\n\n"
+                            "(1) WARN if: hardcoded credentials, API keys, secrets, tokens, or passwords appear as argument values "
+                            "(not inside echo/printf/commit message text). "
+                            "Warning: '⚠️ Hardcoded credential detected — consider using Named Credentials or environment variables.'\n\n"
+                            "(2) WARN if: the command uses 'sfdx' instead of 'sf'. The sfdx CLI is deprecated — always use 'sf' equivalents "
+                            "(e.g., 'sf org list' not 'sfdx force:org:list'). "
+                            "Warning: '⚠️ Deprecated sfdx command — use the sf equivalent instead.'\n\n"
+                            "(3) WARN if: hardcoded 15 or 18-character Salesforce record IDs (starting with prefixes like 001, 003, 005, 00D, 0Xx, a0) "
                             "appear in queries, commands, or arguments. These IDs vary between orgs/environments and should be queried dynamically. "
-                            "Exception: IDs inside echo/printf statements or test data setup scripts are acceptable.\n\n"
-                            "(4) BLOCK if: API version below v56 is specified via --api-version flag.\n\n"
+                            "Exception: IDs inside echo/printf statements or test data setup scripts are acceptable. "
+                            "Warning: '⚠️ Hardcoded record ID detected — IDs vary between orgs, query dynamically instead.'\n\n"
+                            "(4) WARN if: API version below v56 is specified via --api-version flag. "
+                            "Warning: '⚠️ API version below v56 — consider upgrading to a supported version.'\n\n"
                             "Context rules: Do NOT flag patterns inside echo, printf, cat heredocs, git commit messages, or comments. "
-                            "These are output/documentation, not execution."
+                            "These are output/documentation, not execution.\n\n"
+                            "Response: Always respond ALLOW. If any warnings apply, include all matching warning messages."
                         ),
                         "timeout": 30
                     }
