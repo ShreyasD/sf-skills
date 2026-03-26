@@ -37,10 +37,11 @@ By default it clones the plugin into `~/.sf-community-tools/datacloud/sf-cli-plu
 ## Manual setup
 
 ```bash
-git clone https://github.com/gthoppae/sf-cli-plugin-data360.git
+git clone https://github.com/Jaganpro/sf-cli-plugin-data360.git
 cd sf-cli-plugin-data360
 yarn install
 npx tsc
+node ~/.claude/skills/sf-datacloud/scripts/generate-manifest.mjs .
 sf plugins link .
 ```
 
@@ -71,6 +72,28 @@ When using linked community plugins, stderr can include warning noise. For norma
 sf data360 dmo list --all -o myorg 2>/dev/null
 sf data360 segment list -o myorg 2>/dev/null
 ```
+
+## Troubleshooting
+
+### ESM auto-transpile warning
+
+If you see `Warning: @gthoppae/sf-cli-plugin-data360 is a linked ESM module and cannot be auto-transpiled`, generate the oclif command manifest:
+
+```bash
+node ~/.claude/skills/sf-datacloud/scripts/generate-manifest.mjs ~/.sf-community-tools/datacloud/sf-cli-plugin-data360
+```
+
+This tells oclif to use pre-compiled output directly instead of attempting auto-transpilation. The `npx oclif manifest` alternative may fail on newer Node.js versions due to `@oclif/core` version mismatches.
+
+### Plugin not found after install
+
+If `sf` was installed globally (with `sudo`), the default data directory may be root-owned. Set `SF_DATA_DIR` in your shell profile:
+
+```bash
+export SF_DATA_DIR="${HOME}/.local/share/sf"
+```
+
+Then re-run `sf plugins link .` from the plugin directory, or re-run the bootstrap script.
 
 ## What to do if the plugin is missing
 

@@ -783,9 +783,11 @@ def install_datacloud_runtime(dry_run: bool = False) -> Tuple[bool, List[str]]:
             return False, notes
         notes.append(f"Cloned runtime checkout: {DATACLOUD_RUNTIME_PLUGIN_DIR}")
 
+    manifest_script = SKILLS_DIR / "sf-datacloud" / "scripts" / "generate-manifest.mjs"
     for cmd, label, timeout in [
         (["yarn", "install"], "Installed runtime dependencies", 1200),
         (["npx", "tsc"], "Compiled runtime", 1200),
+        (["node", str(manifest_script), str(DATACLOUD_RUNTIME_PLUGIN_DIR)], "Generated oclif command manifest", 60),
     ]:
         ok, msg = _run_command(cmd, cwd=DATACLOUD_RUNTIME_PLUGIN_DIR, timeout=timeout)
         notes.append(f"{label if ok else 'Failed: ' + label.lower()}: {msg or ''}".rstrip())
