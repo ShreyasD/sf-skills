@@ -42,6 +42,7 @@ import os
 import re
 import shutil
 import ssl
+import stat
 import subprocess
 import sys
 import tempfile
@@ -411,18 +412,44 @@ def detect_environment() -> Tuple[str, Dict[str, Any]]:
     return env_type, details
 
 
+def _chmod_tree_writable(path: Path) -> None:
+    """Recursively add owner rwx permissions so rmtree can proceed.
+
+    Fixes the root first so os.walk can enter it, then walks top-down
+    to fix subdirectories before os.walk tries to descend into them.
+    """
+    try:
+        os.chmod(str(path), stat.S_IRWXU)
+    except OSError:
+        pass
+    for root, dirs, files in os.walk(str(path)):
+        for name in dirs + files:
+            try:
+                os.chmod(os.path.join(root, name), stat.S_IRWXU)
+            except OSError:
+                pass
+
+
 def safe_rmtree(path: Path) -> None:
-    """Remove a directory tree, handling symlinks gracefully.
+    """Remove a directory tree, handling symlinks and permission errors gracefully.
 
     Python 3.12+ shutil.rmtree() refuses to operate on symbolic links.
     This helper detects symlinks and unlinks them instead, preventing
     OSError("Cannot call rmtree on a symbolic link").
+
+    On macOS, files may have restrictive permissions from quarantine
+    attributes or Finder locks. On PermissionError, this walks the tree
+    to add owner-rwx permissions and retries the removal.
     """
     p = Path(path)
     if p.is_symlink():
         p.unlink()
     elif p.exists():
-        shutil.rmtree(p)
+        try:
+            shutil.rmtree(p)
+        except PermissionError:
+            _chmod_tree_writable(p)
+            shutil.rmtree(p)
 
 
 def write_metadata(version: str, commit_sha: Optional[str] = None):
