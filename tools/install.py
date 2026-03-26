@@ -3216,9 +3216,18 @@ def cmd_finalize_install(version: str, commit_sha: Optional[str] = None,
                 location = DATACLOUD_RUNTIME_PLUGIN_DIR if datacloud_status["managedGitCheckout"] else "already available in sf CLI"
                 print_info(f"Optional Data Cloud runtime ready ({location})")
             else:
-                print_warning("sf-skills installed, but the optional Data Cloud runtime was not installed successfully")
-                print_info("Retry with: python3 ~/.claude/sf-skills-install.py --with-datacloud-runtime")
-                return 1
+                # The OLD installer's install_datacloud_runtime() may have
+                # failed (e.g., dirty working tree or stale origin URL).
+                # Retry with the NEW code — this is the whole point of re-exec.
+                print_info("Data Cloud runtime not ready — retrying with updated installer...")
+                ok, notes = install_datacloud_runtime(dry_run=dry_run)
+                for note in notes:
+                    print_substep(note)
+                if not ok:
+                    print_warning("sf-skills installed, but the optional Data Cloud runtime was not installed successfully")
+                    print_info("Retry with: python3 ~/.claude/sf-skills-install.py --with-datacloud-runtime")
+                    return 1
+                print_info("Optional Data Cloud runtime installed successfully")
     else:
         print(f"\n{c('DRY RUN complete - no changes made', Colors.YELLOW)}\n")
 
