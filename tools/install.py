@@ -111,7 +111,7 @@ SF_DOCS_RUNTIME_VENV = SF_DOCS_RUNTIME_DIR / "venv"
 SF_DOCS_PLAYWRIGHT_BROWSERS_DIR = SF_DOCS_RUNTIME_DIR / "ms-playwright"
 
 # Optional Data Cloud runtime (community-managed, not vendored into sf-skills)
-DATACLOUD_RUNTIME_REPO = "https://github.com/gthoppae/sf-cli-plugin-data360.git"
+DATACLOUD_RUNTIME_REPO = "https://github.com/Jaganpro/sf-cli-plugin-data360.git"
 DATACLOUD_RUNTIME_BASE_DIR = Path.home() / ".sf-community-tools" / "datacloud"
 DATACLOUD_RUNTIME_PLUGIN_DIR = DATACLOUD_RUNTIME_BASE_DIR / "sf-cli-plugin-data360"
 DATACLOUD_RUNTIME_COMMANDS = ("git", "node", "yarn", "npx", "sf")
